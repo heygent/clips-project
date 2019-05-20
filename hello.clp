@@ -1,17 +1,32 @@
 ; Ciao!
 
-(deftemplate localita "località turistica"
-    (slot nome)
-    (slot regione )
-    (multislot turismo )
+(deftemplate vototur
+    (slot nomecit)
+    (slot tipo)
+    (slot valutazione)
 )
 
-(deffacts cittaditorino "yeah"
-   (localita 
-    (nome Torino)
-    (regione Piemonte)
-    (turismo montano culturale religioso enogastronomico)
-    ) 
+(deftemplate localita "località turistica"
+    (slot nome)
+    (slot regione)
+    (multislot turismo)
+)
+
+(deffacts voti
+    (vototur (nomecit torino) (tipo balneare) (valutazione 0))
+    (vototur (nomecit torino) (tipo sessuale) (valutazione grande))
+    (vototur (nomecit milano) (tipo sanitario) (valutazione 10))
+)
+
+(deffacts città
+    (localita (nome torino) (turismo balneare))
+    (localita (nome milano) (turismo sanitario))
+)
+
+(defrule dammivoti
+    (vototur (nomecit torino) (tipo ?tipo) (valutazione ?val))
+=>
+    (printout t "ecco il voto per torino "  ?tipo ?val crlf)
 )
 
 (defrule esistetorino 
