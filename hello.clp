@@ -1,11 +1,5 @@
 ; Ciao!
 
-(deftemplate vototur
-    (slot nomecit)
-    (slot tipo)
-    (slot valutazione)
-)
-
 (deftemplate localita "località turistica"
     (slot nome)
     (slot regione)
@@ -13,9 +7,9 @@
 )
 
 (deffacts voti
-    (vototur (nomecit torino) (tipo balneare) (valutazione 0))
-    (vototur (nomecit torino) (tipo sessuale) (valutazione grande))
-    (vototur (nomecit milano) (tipo sanitario) (valutazione 10))
+    (vototur torino  balneare  0 )
+    (vototur torino  sessuale  grande)
+    (vototur milano  sanitario  10)
 )
 
 (deffacts città
@@ -24,15 +18,9 @@
 )
 
 (defrule dammivoti
-    (vototur (nomecit torino) (tipo ?tipo) (valutazione ?val))
+    (vototur torino ?tipo ?val)
 =>
-    (printout t "ecco il voto per torino "  ?tipo ?val crlf)
-)
-
-(defrule esistetorino 
-    (esistetorino true)
-=>
-    (printout t "esiste e come torino" crlf)
+    (printout t "ecco il voto per torino " ?tipo  ?val crlf)
 )
 
 (defrule ciaotorino "we"
@@ -42,10 +30,3 @@
     (printout t "ciao sono la città di" ?citta crlf)
     (assert (esistetorino  true))
 )
-
-(defrule ciaotorino2 "we"
-    (localita (nome ?name))  
-=>
-    (printout t "ciao sono la città di " ?name crlf)
-)
-
