@@ -1,11 +1,25 @@
 ; Ciao!
-
+(defmodule MAIN (export ?ALL))
 (deftemplate località "località turistica"
     (slot nome)
     (slot regione)
     (slot lat)
     (slot lon)
-    (multislot turismo)
+)
+
+(deftemplate  turismo
+    (slot città)
+    (slot  tipo)
+    (slot  voto)
+)
+
+(deftemplate albergo
+   (slot id)
+   (slot città)
+   (slot stelle)
+   (slot costo)
+   (slot posti-occupati) 
+   (slot posti-totali)
 )
 
 (deftemplate preferenza
@@ -26,15 +40,18 @@
   (slot numero-di-città) 
   )
 
-(deffacts voto
-  (voto torino  balneare  0 )
-  (voto torino  sessuale  grande)
-  (voto milano  sanitario  10)
-  )
-
 (deffacts località
   (località (nome torino) (lat 45.0677551) (lon 7.6824892) (turismo balneare))
   (località (nome milano) (lat 45.465454) (lon 9.186516) (turismo sanitario))
+  )
+
+;(albergo città stelle costo posti-occupati post-totali)
+(deffacts albergo
+  (albergo (città torino) (stelle 3) (costo 50) (posti-occupati 100) (posti-totali 200))
+  (albergo (città torino) (stelle 4) (costo 75) (posti-occupati 50) (posti-totali 80))
+  (albergo (città torino) (stelle 5) (costo 100) (posti-occupati 150) (posti-totali 180))
+  (albergo (città milano) (stelle 2) (costo 25) (posti-occupati 30) (posti-totali 50))
+  (albergo (città milano) (stelle 1) (costo 5) (posti-occupati 60) (posti-totali 60))
   )
 
 (deffacts prenotazione
@@ -43,15 +60,6 @@
 
 (deffacts preferenza
   (preferenza (id-prenotazione 1) (città torino))
-  )
-
-;(albergo città stelle costo posti-occupati post-totali)
-(deffacts albergo
-  (albergo torino 3 50 100 200 )
-  (albergo torino 4 75 50 100) 
-  (albergo torino 5 100 130 130)
-  (albergo milano 3 50 12 50)
-  (albergo milano 5 100 1 80)
   )
 
 (deffunction calcolo-posizione
@@ -80,29 +88,21 @@
     
   )
 
-;(deffunction distanza ()
-
-  
- ; (printout t "queste so le coordinate" ?nome1 ?nome crlf)
-  
-;)
-
-(defrule dammivoto
-  (voto ?nome ?tipo ?val)
+  (defrule start
   =>
-  (printout t "ecco i voto " ?nome ?tipo  ?val crlf)
-  )
+  (focus SEARCH)
+    )
 
-(defrule find_data
-(località)
-=>)
+(defmodule SEARCH (import MAIN ?ALL) (export ?ALL))
 
 (defrule  trova-alberghi
   (prenotazione (id-prenotazione ?id))
   (preferenza (id-prenotazione ?id) (città ?cit))
   (località (nome ?cit) )
-  (albergo  ?cit ? ? ?occupati ?totali) 
+  (albergo (città ?cit) (costo ?costo) (posti-occupati ?occupati) (posti-totali ?totali))
   (test(< ?occupati ?totali))
   =>
-  (printout t "puoi effettuare  una prenotazione a: "  ?id ?cit  crlf)
+  (printout t "puoi effettuare  una prenotazione a " ?cit " per un costo di " ?costo  crlf)
   )
+
+(defmodule CHECK (import MAIN ?ALL) (import SEARCH ?ALL))
