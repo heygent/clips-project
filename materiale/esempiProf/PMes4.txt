@@ -1,0 +1,41 @@
+ESEMPI PATTERN MATCHING
+
+
+
+(deftemplate studente  (slot matr) (slot nome) (slot cl) (slot univ))
+
+
+(deffacts listastud 
+        (studente (matr 22009) (nome Luisa) (univ UniTo))
+        (studente (matr 22012) (nome Elena) (cl FIL) (univ UniTo))
+        (studente (matr 22010) (nome Luca) (cl MED) (univ UniTo))
+        (studente (matr 22011) (nome Liliana) (cl ECO) (univ UniTo))
+        (studente (matr 22000) (nome Giorgio)  (cl INF) (univ UniTo))
+        (studente (matr 21000) (nome Anna) (cl BIO) (univ UniTo))
+        (studente (matr 22004) (nome Davide) (cl MAT) (univ UniTo))
+        (studente (matr 22005) (nome Sara) (cl BIO) (univ UniTo))
+        (studente (matr 22003) (nome Marco) (cl ING) (univ PoliTo))
+        (studente (matr 22008) (nome Paolo) (cl INF) (univ UniTo))
+        )
+ 
+
+(defrule r1
+       (studente (cl INF|MAT|FIS|ING) (nome ?x))
+         =>  (assert (ERC-code ?x PE)))
+ 
+
+(defrule r2
+        (studente (cl BIO|MED) (nome ?x))
+         => (assert (ERC-code ?x LS)))
+
+(defrule r3
+        (studente (cl ECO) (nome ?x))
+         => (assert (ERC-code ?x SH)))
+
+(defrule r4
+       (studente (cl ~ING&~INF&~BIO&~MED&~MAT&~FIS) (nome ?x))
+         => (assert (ERC-code ?x SH)))
+
+(defrule r5
+       (studente (cl ?y&~ING&~INF&~BIO&~MED&~MAT&~FIS) (nome ?x))
+         => (assert (ERC-code ?x SH  laurea ?y)))
