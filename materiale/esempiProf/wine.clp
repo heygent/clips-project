@@ -306,9 +306,9 @@
   (rule (if preferred-sweetness is unknown)
         (then best-sweetness is dry with certainty 20 and
               best-sweetness is medium with certainty 20 and
-              best-sweetness is sweet with certainty 20))
+              best-sweetness is sweet with certainty 20)))
 
-)
+
 
 ;;************************
 ;;* WINE SELECTION RULES *
@@ -371,7 +371,7 @@
    (assert (phase print-wines)))
 
 (defrule PRINT-RESULTS::print-wine ""
-  ?rem <- (attribute (name wine) (value ?name) (certainty ?per))		  
+  ?rem <- (attribute (name wine) (value ?name) (certainty ?per))      
   (not (attribute (name wine) (certainty ?per1&:(> ?per1 ?per))))
   =>
   (retract ?rem)
