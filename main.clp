@@ -1,12 +1,61 @@
+(defmodule MAIN (export ?ALL))
 
-(deftemplate turismo
+(deftemplate query
+    (slot durata)
+    (slot numero-di-persone)
+    (slot numero-di-città)
+    (multislot regioni-da-includere)
+    (multislot regioni-da-escludere)
+    (multislot turismo)
+    (slot budget))
+
+(defmodule DOMINIO (export ?ALL))
+
+(deftemplate località "località turistica"
+    (slot nome)
+    (slot regione)
+    (slot lat)
+    (slot lon)
+    ; Tipi di turismo
+    (slot turismo-balneare (default 0))
+    (slot turismo-lacustre (default 0))
+    (slot turismo-naturalistico (default 0))
+    (slot turismo-termale (default 0))
+    (slot turismo-culturale (default 0))
+    (slot turismo-religioso (default 0))
+    (slot turismo-sportivo (default 0))
+    (slot turismo-enogastronomico (default 0)))
+
+(deffunction punteggio-to-cf (?punteggio)
+    (- (/ (* ?punteggio 2) 5) 1))
+
+(deftemplate albergo
+    (slot id)
     (slot città)
-    (slot balneare (default 0))
-    (slot lacustre (default 0))
-    (slot naturalistico (default 0))
-    (slot termale (default 0))
-    (slot culturale (default 0))
-    (slot religioso (default 0))
-    (slot sportivo (default 0))
-    (slot enogastronomico (default 0)))
+    (slot stelle)
+    (slot costo)
+    (slot posti-liberi))
 
+(defmodule REASONING (export deftemplate OAV))
+
+(deftemplate attribute
+    (slot name)
+    (slot value)
+    (slot certainty))
+
+
+(defmodule REGOLE (export ?ALL))
+
+(defrule località-preferita
+    ?q <- (query (turismo $? ?tipo-turismo $?))
+    ?loc <- (località (nome ?nome))
+=>
+    (assert 
+        (attribute (name località-preferita-per-turismo)
+                   (value ?nome)
+                   (certainty 1)
+    )))
+
+
+
+(defrule )
