@@ -24,16 +24,12 @@
     (slot città)
     (slot stelle)
     (slot costo)
-    (slot posti-occupati)
-    (slot posti-totali))
+    (slot posti-liberi)
 
 
 (deftemplate preferenza
     (slot id-prenotazione)
-    (slot mese-arrivo)
-    (slot mese-partenza)
-    (slot giorno-arrivo)
-    (slot giorno-partenza)
+    (slot giorni)
     (slot città)
     (multislot turismo)
     (slot prezzo-massimo)
