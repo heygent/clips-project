@@ -15,16 +15,7 @@
     (slot nome)
     (slot regione)
     (slot lat)
-    (slot lon)
-    ; Tipi di turismo
-    (slot turismo-balneare (default 0))
-    (slot turismo-lacustre (default 0))
-    (slot turismo-naturalistico (default 0))
-    (slot turismo-termale (default 0))
-    (slot turismo-culturale (default 0))
-    (slot turismo-religioso (default 0))
-    (slot turismo-sportivo (default 0))
-    (slot turismo-enogastronomico (default 0)))
+    (slot lon))
 
 (deffunction punteggio-to-cf (?punteggio)
     (- (/ (* ?punteggio 2) 5) 1))
@@ -50,11 +41,9 @@
     ?q <- (query (turismo $? ?tipo-turismo $?))
     ?loc <- (località (nome ?nome))
 =>
-    (assert 
-        (attribute (name località-preferita-per-turismo)
-                   (value ?nome)
-                   (certainty 1)
-    )))
+    (assert (attribute (name località-preferita-per-turismo)
+                       (value ?nome)
+                       (certainty 1))))
 
 
 
