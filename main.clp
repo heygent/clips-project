@@ -83,7 +83,7 @@
 (deffacts località
     (località (nome Torino) (lat -150) (lon 150))
     (località (nome Milano) (lat 150) (lon 150))
-    (località (nome MonculoPiemontese) (lat -150) (lon 157))
+    (località (nome MonculoPiemontese) (lat -150) (lon 187))
     (località (nome Macerata) (lat -150) (lon -150))
     (località (nome Foggia) (lat 150) (lon -150))
     )
@@ -144,9 +144,9 @@
   (bind ?distanza-da-centro-regione
     (distanza-coordinate ?x-località ?y-località ?x-regione ?y-regione))
   (bind ?distanza-da-confine-regione (- ?distanza-da-centro-regione ?raggio))
-  (bind ?distanza-da-regione
-    (limita 0 ?*MAX-DISTANZA* ?distanza-da-centro-regione))
-  (/ ?distanza-da-regione ?*MAX-DISTANZA*)
+  (bind ?distanza-da-confine-regione
+    (limita 0 ?*MAX-DISTANZA* ?distanza-da-confine-regione))
+  (/ ?distanza-da-confine-regione ?*MAX-DISTANZA*)
 )
 
 (defrule località-preferita-per-regioni-incluse
