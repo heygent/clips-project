@@ -38,17 +38,38 @@
     (slot costo)
     (slot posti-liberi))
 
+(deffunction da-superficie-a-raggio (?superficie-in-km2)
+    (/ (sqrt (* 1000 ?superficie-in-km2)) 2))
+
+(deffacts regioni "AAAAAAAAAAAAAAAAAAAH"
+    (regione 
+        (nome Lombardia)
+        (lat 45.6209)
+        (lon 9.768893)
+        (raggio (da-superficie-a-raggio 23863.65)))
+    (regione
+        (nome Piemonte)
+        (lat 45.060735)
+        (lon 7.923549)
+        (raggio (da-superficie-a-raggio 25387.07)))
+    (regione
+        (nome Marche)
+        (lat 43.3458388)
+        (lon 13.1415872)
+        (raggio (da-superficie-a-raggio 9401.38)))
+    (regione
+        (nome Puglia) 
+        (lat 40.9842539)
+        (lon 16.6210027)
+        (raggio (da-superficie-a-raggio 19540.9)))
+)
+
 (defmodule REASONING (export deftemplate OAV))
 
 (deftemplate attribute
     (slot name)
     (slot value)
     (slot certainty))
-
-(defmodule DOMINIO (export ?ALL))
-
-(deffacts località
-    ())
 
 (defmodule REGOLE (export ?ALL))
 
@@ -64,7 +85,10 @@
     (bind ?c (* 2 (atan ?q)))
     (* 6371e3 ?c))
 
-(defrule località-preferita-per-turismo-rule
+(defrule pappa "afadfas"
+    (query (durata ?dur)) => (printout t "dafdfadaf"))
+
+(defrule località-preferita-per-turismo
     (query (turismo $? ?tipo-turismo $?))
     (località-tipo-turismo (nome-località ?nome) (tipo ?tipo-turismo) (punteggio ?punteggio))
 =>
@@ -87,4 +111,3 @@
                             (if (< ?differenza-distanze 0) then 1 else 
                             (if (> ?differenza-distanze ?MAX-DISTANZA) then -1 else 
                             (- 1 (* 2 (/ ?differenza-distanze ?MAX-DISTANZA)))))))))
-)
