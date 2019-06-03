@@ -48,57 +48,45 @@
     (slot costo)
     (slot posti-liberi))
 
-(deffunction da-superficie-a-raggio (?superficie-in-km2)
-    (sqrt ?superficie-in-km2))
-
 (deffacts  query
-    (query  (turismo balneare) (regioni-da-includere Piemonte))
+    (query (turismo balneare) (regioni-da-includere Piemonte))
 )
-
 (deffacts località-tipo-turismo
     (località-tipo-turismo (nome-località Torino) (tipo balneare) (punteggio 3))
 )
 
 (deffacts località
-    (località (nome torino) (lat 45.0677551) (lon 7.6824892))
-    (località (nome milano) (lat 45.465454) (lon 9.186516)))
+    (località (nome Torino) (lat -150) (lon 150))
+    (località (nome Milano) (lat 150) (lon 150))
+    (località (nome MonculoPiemontese) (lat 150) (lon 157)))
 
 (deffacts regioni
     (regione
         (nome Lombardia)
-        (lat 45.6209)
-        (lon 9.768893)
-        (raggio (da-superficie-a-raggio 23863.65)))
+        (lat -150)
+        (lon 150)
+        (raggio 30))
     (regione
         (nome Piemonte)
-        (lat 45.060735)
-        (lon 7.923549)
-        (raggio (da-superficie-a-raggio 25387.07)))
+        (lat 150)
+        (lon 150)
+        (raggio 30))
     (regione
         (nome Marche)
-        (lat 43.3458388)
-        (lon 13.1415872)
-        (raggio (da-superficie-a-raggio 9401.38)))
+        (lat -150)
+        (lon -150)
+        (raggio 30))
     (regione
         (nome Puglia)
-        (lat 40.9842539)
-        (lon 16.6210027)
-        (raggio (da-superficie-a-raggio 19540.9)))
+        (lat 150)
+        (lon -150)
+        (raggio 30))
 )
 
 (defmodule REGOLE (export ?ALL) (import MAIN ?ALL) (import DOMINIO ?ALL))
 
 (deffunction distanza-coordinate (?lat1 ?lon1 ?lat2 ?lon2)
-    (bind ?phi1 (deg-rad ?lat1))
-    (bind ?phi2 (deg-rad ?lat2))
-    (bind ?dphi (deg-rad (- ?lat2 ?lat1)))
-    (bind ?dlamb (deg-rad (- ?lon2 ?lon1)))
-    (bind ?a
-        (+ (* (sin (/ ?dphi 2)) (sin (/ ?dphi 2)))
-           (* (cos ?phi1) (cos ?phi2) (sin (/ ?dlamb 2)) (sin (/ ?dlamb 2)))))
-    (bind ?q (/ (sqrt ?a) (sqrt (- 1 ?a))))
-    (bind ?c (* 2 (atan ?q)))
-    (/ 1000 (* 6371e3 ?c)))
+    (sqrt (+ (** (- ?lat2 ?lat1) 2) (** (- ?lon2 ?lon1) 2))))
 
 (defrule località-preferita-per-turismo
     (query (turismo $? ?tipo-turismo $?))
@@ -108,33 +96,51 @@
                        (value ?nome)
                        (certainty (punteggio-località-to-cf ?punteggio)))))
 
-(defglobal ?*MAX-DISTANZA* = 50)
+
+(deffunction limita (?min ?max ?num)
+  "Confina il valore di ?num tra ?min e ?max."
+  (min ?max (max ?min ?num)))
+
+(defglobal ?*MAX-DISTANZA* = 10)
+
+(deffunction punteggio-distanza-da-area
+  "
+  Date le coordinate di una regione e di una località, e il raggio della
+  circonferenza che rappresenta la regione, restituisce un numero da 0 a 1.
+  0 significa che la località si trova all'interno della regione, 1 che ne è al
+  di fuori. I valori intermedi rappresentano quanto è lontana la località dalla
+  regione, dove un valore che tende a 1 indica una distanza tendente a
+  ?*MAX-DISTANZA*.
+  "
+  (?x-località ?y-località ?x-regione ?y-regione ?raggio)
+  (bind ?distanza-da-centro-regione
+    (distanza-coordinate ?x-località ?y-località ?x-regione ?y-regione))
+  (bind ?distanza-da-confine-regione (- ?distanza-da-centro-regione ?raggio))
+  (bind ?distanza-da-regione
+    (limita 0 ?*MAX-DISTANZA* ?distanza-da-centro-regione))
+  (/ ?distanza-da-regione ?*MAX-DISTANZA*)
+)
 
 (defrule località-preferita-per-regioni-incluse
     (query (regioni-da-includere $? ?regione $?))
     (località (nome ?nome) (lat ?lat-località) (lon ?lon-località))
-    (regione (lat ?lat-regione) (lon ?lon-regione) (raggio ?r))
+    (regione (lat ?lat-regione) (lon ?lon-regione) (raggio ?raggio))
 =>
-    (bind ?distanza-da-regione (distanza-coordinate ?lat-località ?lon-località ?lat-regione ?lon-regione))
-    (bind ?differenza-distanze (- ?r ?distanza-da-regione))
+    (bind ?punteggio
+      (punteggio-distanza-da-area
+        ?lat-località ?lon-località ?lat-regione ?lon-regione ?raggio))
     (assert (attribute (name località-preferita-per-regioni-incluse)
                        (value ?nome)
-                       (certainty
-                            (if (< ?differenza-distanze 0) then 1 else
-                            (if (> ?differenza-distanze ?*MAX-DISTANZA*) then -1 else
-                            (- 1 (* 2 (/ ?differenza-distanze
-                            ?*MAX-DISTANZA*)))))))))
+                       (certainty (- 1 ?punteggio)))))
 
 (defmodule PRINT-RESULTS (import MAIN ?ALL))
 
-(defrule PRINT-RESULTS::turismo ""
-  ?rem <- (attribute (name località-preferita-per-turismo) (value ?name))      
+(defrule stampa-attributi
+  ?rem <-
+    (attribute
+      (name ?name)
+      (value ?value)
+      (certainty ?certainty))
   =>
   ;(retract ?rem)
-  (printout t " ecco le città preferite per turismo: " ?name))
-
-  (defrule PRINT-RESULTS::regioni ""
-  ?rem <- (attribute (name località-preferita-per-regioni-incluse) (value ?name))      
-  =>
-  ;(retract ?rem)
-  (printout t " ecco le città preferite per regioni: " ?name))
+  (format t " %-40s %-30s %2f%n" ?name ?value ?certainty))
