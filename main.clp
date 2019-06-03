@@ -14,11 +14,29 @@
     (slot value)
     (slot certainty))
 
-(defrule MAIN::start
+(defrule start
   (declare (salience 10000))
   =>
   (set-fact-duplication TRUE)
   (focus DOMINIO REGOLE PRINT-RESULTS))
+
+(deffunction combined-certainty
+  (?cert1 ?cert2)
+  (if (and (>= 0 ?cert1) (>= 0 ?cert2)) then
+    (return (- (+ ?cert1 ?cert2) (* ?cert1 ?cert2))))
+  (if (and (< 0 ?cert1) (< 0 ?cert2)) then
+    (return (+ (+ ?cert1 ?cert2) (* ?cert1 ?cert2))))
+  (/ (+ ?cert1 ?cert2) (- 1 (min (abs ?cert1) (abs ?cert2)))))
+
+(defrule combine-certainties
+  (declare (salience 100)
+           (auto-focus TRUE))
+  ?rem1 <- (attribute (name ?rel) (value ?val) (certainty ?cert1))
+  ?rem2 <- (attribute (name ?rel) (value ?val) (certainty ?cert2))
+  (test (neq ?rem1 ?rem2))
+  =>
+  (retract ?rem1)
+  (modify ?rem2 (certainty (combined-certainty ?cert1 ?cert2))))
 
 (defmodule DOMINIO (export ?ALL)(import MAIN ?ALL))
 
@@ -51,8 +69,8 @@
 (deffacts query
     (query
       (turismo balneare)
-      (regioni-da-includere Piemonte Lombardia)
-      (regioni-da-escludere Marche))
+      (regioni-da-includere Lombardia)
+      (regioni-da-escludere Piemonte Marche))
     )
 
 (deffacts località-tipo-turismo
@@ -65,18 +83,19 @@
 (deffacts località
     (località (nome Torino) (lat -150) (lon 150))
     (località (nome Milano) (lat 150) (lon 150))
-    (località (nome MonculoPiemontese) (lat 150) (lon 157))
+    (località (nome MonculoPiemontese) (lat -150) (lon 157))
     (località (nome Macerata) (lat -150) (lon -150))
+    (località (nome Foggia) (lat 150) (lon -150))
     )
 
 (deffacts regioni
     (regione
-        (nome Lombardia)
+        (nome Piemonte)
         (lat -150)
         (lon 150)
         (raggio 30))
     (regione
-        (nome Piemonte)
+        (nome Lombardia)
         (lat 150)
         (lon 150)
         (raggio 30))
@@ -138,7 +157,7 @@
     (bind ?punteggio
       (punteggio-distanza-da-area
         ?lat-località ?lon-località ?lat-regione ?lon-regione ?raggio))
-    (assert (attribute (name località-preferita-per-regioni-incluse)
+    (assert (attribute (name località-preferita-per-regione)
                        (value ?nome)
                        (certainty (- 1 ?punteggio)))))
 
@@ -150,7 +169,7 @@
     (bind ?punteggio
       (punteggio-distanza-da-area
         ?lat-località ?lon-località ?lat-regione ?lon-regione ?raggio))
-    (assert (attribute (name località-preferita-per-regioni-escluse)
+    (assert (attribute (name località-preferita-per-regione)
                        (value ?nome)
                        (certainty (- ?punteggio 1)))))
 
