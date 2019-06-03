@@ -48,17 +48,26 @@
     (slot costo)
     (slot posti-liberi))
 
-(deffacts  query
-    (query (turismo balneare) (regioni-da-includere Piemonte))
-)
+(deffacts query
+    (query
+      (turismo balneare)
+      (regioni-da-includere Piemonte Lombardia)
+      (regioni-da-escludere Marche))
+    )
+
 (deffacts località-tipo-turismo
-    (località-tipo-turismo (nome-località Torino) (tipo balneare) (punteggio 3))
+    (località-tipo-turismo
+      (nome-località Torino)
+      (tipo balneare)
+      (punteggio 3))
 )
 
 (deffacts località
     (località (nome Torino) (lat -150) (lon 150))
     (località (nome Milano) (lat 150) (lon 150))
-    (località (nome MonculoPiemontese) (lat 150) (lon 157)))
+    (località (nome MonculoPiemontese) (lat 150) (lon 157))
+    (località (nome Macerata) (lat -150) (lon -150))
+    )
 
 (deffacts regioni
     (regione
@@ -85,8 +94,8 @@
 
 (defmodule REGOLE (export ?ALL) (import MAIN ?ALL) (import DOMINIO ?ALL))
 
-(deffunction distanza-coordinate (?lat1 ?lon1 ?lat2 ?lon2)
-    (sqrt (+ (** (- ?lat2 ?lat1) 2) (** (- ?lon2 ?lon1) 2))))
+(deffunction distanza-coordinate (?x1 ?y1 ?x2 ?y2)
+    (sqrt (+ (** (- ?x1 ?x2) 2) (** (- ?y1 ?y2) 2))))
 
 (defrule località-preferita-per-turismo
     (query (turismo $? ?tipo-turismo $?))
@@ -124,7 +133,7 @@
 (defrule località-preferita-per-regioni-incluse
     (query (regioni-da-includere $? ?regione $?))
     (località (nome ?nome) (lat ?lat-località) (lon ?lon-località))
-    (regione (lat ?lat-regione) (lon ?lon-regione) (raggio ?raggio))
+    (regione (nome ?regione) (lat ?lat-regione) (lon ?lon-regione) (raggio ?raggio))
 =>
     (bind ?punteggio
       (punteggio-distanza-da-area
@@ -132,6 +141,18 @@
     (assert (attribute (name località-preferita-per-regioni-incluse)
                        (value ?nome)
                        (certainty (- 1 ?punteggio)))))
+
+(defrule località-preferita-per-regioni-escluse
+    (query (regioni-da-escludere $? ?regione $?))
+    (località (nome ?nome) (lat ?lat-località) (lon ?lon-località))
+    (regione (nome ?regione) (lat ?lat-regione) (lon ?lon-regione) (raggio ?raggio))
+=>
+    (bind ?punteggio
+      (punteggio-distanza-da-area
+        ?lat-località ?lon-località ?lat-regione ?lon-regione ?raggio))
+    (assert (attribute (name località-preferita-per-regioni-escluse)
+                       (value ?nome)
+                       (certainty (- ?punteggio 1)))))
 
 (defmodule PRINT-RESULTS (import MAIN ?ALL))
 
