@@ -144,9 +144,7 @@
   (bind ?distanza-da-centro-regione
     (distanza-coordinate ?x-località ?y-località ?x-regione ?y-regione))
   (bind ?distanza-da-confine-regione (- ?distanza-da-centro-regione ?raggio))
-  (bind ?distanza-da-confine-regione
-    (limita 0 ?*MAX-DISTANZA* ?distanza-da-confine-regione))
-  (/ ?distanza-da-confine-regione ?*MAX-DISTANZA*)
+  (limita 0 1 (/ ?distanza-da-confine-regione ?*MAX-DISTANZA*))
 )
 
 (defrule località-preferita-per-regioni-incluse
