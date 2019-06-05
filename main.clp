@@ -124,6 +124,36 @@
                        (value ?nome)
                        (certainty (punteggio-località-to-cf ?punteggio)))))
 
+(defrule località-preferita
+  (attribute
+    (name località-preferita-per-regione)
+    (value ?località)
+    (certainty ?certezza-regione))
+  (attribute
+    (name località-preferita-per-turismo)
+    (value ?località)
+    (certainty ?certezza-turismo))
+=>
+  (assert
+    (attribute
+      (name località-preferita)
+      (value ?località)
+      (certainty (min ?certezza-regione ?certezza-turismo)))))
+
+(defrule località-preferita-no-info
+  (località (nome ?nome-località))
+=>
+  (assert
+    (attribute
+      (name località-preferita-per-regione)
+      (value ?nome-località)
+      (certainty 0)))
+  (assert
+    (attribute
+      (name località-preferita-per-turismo)
+      (value ?nome-località)
+      (certainty 0)))
+)
 
 (deffunction limita (?min ?max ?num)
   "Confina il valore di ?num tra ?min e ?max."
