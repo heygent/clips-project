@@ -275,12 +275,12 @@
   (itinerario (id ?id) (località $?lista-località))
   =>
   (printout t "Regola attivata")
-  (bind ?certezza 1)
+  (bind ?certezza -1)
   (do-for-all-facts ((?att attribute))
     (and
-      (= ?att:name località-preferita)
+      (eq ?att:name località-preferita)
       (member$ ?att:value ?lista-località))
-    (bind ?certezza (min (fact-slot-value ?att certainty) ?certezza)))
+    (bind ?certezza (max (fact-slot-value ?att certainty) ?certezza)))
   (assert (attribute (name itinerario-preferito-per-località) (value ?id) (certainty ?certezza))
   ))
 
