@@ -3,7 +3,7 @@
 (deftemplate query
     (slot durata)
     (slot numero-persone)
-    (slot numero-città)
+    (slot numero-città (default 4))
     (multislot regioni-da-includere)
     (multislot regioni-da-escludere)
     (multislot turismo)
@@ -22,9 +22,9 @@
 
 (deffunction combined-certainty
   (?cert1 ?cert2)
-  (if (and (>= 0 ?cert1) (>= 0 ?cert2)) then
+  (if (and (>= ?cert1 0) (>= ?cert2 0)) then
     (return (- (+ ?cert1 ?cert2) (* ?cert1 ?cert2))))
-  (if (and (< 0 ?cert1) (< 0 ?cert2)) then
+  (if (and (<= ?cert1 0) (<= ?cert2 0)) then
     (return (+ (+ ?cert1 ?cert2) (* ?cert1 ?cert2))))
   (/ (+ ?cert1 ?cert2) (- 1 (min (abs ?cert1) (abs ?cert2)))))
 
@@ -68,10 +68,11 @@
 
 (deffacts query
     (query
+      (numero-città 3)
       (turismo balneare)
-      (regioni-da-includere Lombardia)
-      (regioni-da-escludere Piemonte Marche))
+      (regioni-da-includere Piemonte)
     )
+  )
 
 (deffacts località-tipo-turismo
     (località-tipo-turismo
@@ -84,8 +85,14 @@
     (località (nome Torino) (lat -150) (lon 150))
     (località (nome Milano) (lat 150) (lon 150))
     (località (nome MonculoPiemontese) (lat -150) (lon 187))
-    (località (nome Macerata) (lat -150) (lon -150))
+    (località (nome Macerata) (lat -140) (lon -150))
+    (località (nome Camerino) (lat -100) (lon -150))
+    (località (nome acquasparta) (lat 50) (lon -120))
+    (località (nome ColonettaDiProdo)(lat 75) (lon -100))
     (località (nome Foggia) (lat 150) (lon -150))
+    (località (nome OrtaNova) (lat 249) (lon -150))
+    (località (nome DuaneraLaRocca) (lat 348) (lon -150))
+    (località (nome Zapponeta) (lat 448) (lon -150))
     )
 
 (deffacts regioni
@@ -201,6 +208,53 @@
                        (value ?nome)
                        (certainty (- ?punteggio 1)))))
 
+(deftemplate itinerario
+  (slot id)
+  (multislot località)
+)
+
+(defrule inizia-itinerario
+  (località (nome ?nome))
+=>
+  (assert (itinerario (id (gensym*)) (località ?nome)))
+)
+
+(defrule continua-itinerario
+  (query (numero-città ?numero-città))
+  (itinerario
+    (id ?id)
+    (località $?località-itinerario ?ultima-località))
+  (località (nome ?ultima-località) (lat ?lat1) (lon ?lon1))
+  (località (nome ?nuova-località) (lat ?lat2) (lon ?lon2))
+  (test (< (+ 1 (length$ $?località-itinerario)) ?numero-città))
+  (test (neq ?ultima-località ?nuova-località))
+  (test (not (member$ ?nuova-località ?località-itinerario)))
+  (test (< (distanza-coordinate ?lat1 ?lon1 ?lat2 ?lon2) 100))
+=>
+  (assert (itinerario
+    (id (gensym*))
+    (località ?località-itinerario ?ultima-località ?nuova-località)))
+)
+
+(defrule pulisci-itinerari-incompleti
+  (declare (salience -10))
+  (query (numero-città ?numero-città))
+  ?it <- (itinerario (località $?località))
+  (test (< (length$ ?località) ?numero-città))
+=>
+  (retract ?it))
+
+(defrule itenerario-attribute
+  (declare (salience -100))
+  (itinerario
+    (id ?id)
+    (località $?località-itinerario))
+  =>
+  (assert (attribute (name itinerario-preferito)
+                    (value (implode$ ?località-itinerario))
+                    (certainty 1))))
+
+
 (defmodule PRINT-RESULTS (import MAIN ?ALL))
 
 (defrule stampa-attributi
@@ -209,6 +263,7 @@
       (name ?name)
       (value ?value)
       (certainty ?certainty))
+  ; (test (eq itinerario-preferito ?name))
   =>
   ;(retract ?rem)
   (format t " %-40s %-30s %2f%n" ?name ?value ?certainty))

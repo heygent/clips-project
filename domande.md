@@ -1,16 +1,15 @@
-* Quante mete vorresti visitare?
+# Itinerario
 
 * In quante persone siete?
-
-* Quali aspetti turistici preferisci?
-
-* Quali regioni vuoi visitare ?
-
+* Quante mete vorresti visitare?
 * Qual'è il vostro budget ?
 
+# Località
+
+* Quali aspetti turistici preferisci?
+* Quali regioni vuoi visitare ?
+
+# Albergo
+
 * Quanti giorni durerà la vostra vacanza?
-
-* stelle minime albergo?
-
-
-
+* Stelle minime albergo?
