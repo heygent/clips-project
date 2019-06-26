@@ -214,9 +214,9 @@
 )
 
 (defrule inizia-itinerario
-  (località (nome ?nome))
+  (località (nome ?nome-località))
 =>
-  (assert (itinerario (id (gensym*)) (località ?nome)))
+  (assert (itinerario (id ?nome-località) (località ?nome-località)))
 )
 
 (defrule continua-itinerario
@@ -231,9 +231,10 @@
   (test (not (member$ ?nuova-località ?località-itinerario)))
   (test (< (distanza-coordinate ?lat1 ?lon1 ?lat2 ?lon2) 100))
 =>
+  (bind ?nuove-località (create$ ?località-itinerario ?ultima-località ?nuova-località))
   (assert (itinerario
-    (id (gensym*))
-    (località ?località-itinerario ?ultima-località ?nuova-località)))
+    (id (implode$ ?nuove-località))
+    (località ?nuove-località)))
 )
 
 (defrule pulisci-itinerari-incompleti
@@ -244,14 +245,72 @@
 =>
   (retract ?it))
 
+;(defrule itinerario-preferito-per-località-start
+;  (declare (salience -101))
+;  (itinerario (id ?id))
+;=>
+;  (assert (attribute
+;            (name itinerario-preferito-per-località)
+;            (value ?id)
+;            (certainty 1))))
+
+;(defrule itinerario-preferito-per-località
+;  (declare (salience -102))
+;  (itinerario
+;    (id ?id)
+;    (località $?località-iniziali ?località-corrente $?località-finali))
+;  (attribute
+;    (name località-preferita)
+;    (value ?località-corrente)
+;    (certainty ?certezza-località))
+;  ?att <- (exists (attribute
+;    (name itinerario-preferito-per-località)
+;    (value ?id)))
+;  =>
+;  (printout t "Regola attivata" crlf)
+;  (modify ?att (certainty (min (fact-slot-value ?att certainty) ?certezza-località))))
+
+(defrule itinerario-preferito-per-località
+  (declare (salience -103))
+  (itinerario (id ?id) (località $?lista-località))
+  =>
+  (printout t "Regola attivata")
+  (bind ?certezza 1)
+  (do-for-all-facts ((?att attribute))
+    (and
+      (= ?att:name località-preferita)
+      (member$ ?att:value ?lista-località))
+    (bind ?certezza (min (fact-slot-value ?att certainty) ?certezza)))
+  (assert (attribute (name itinerario-preferito-per-località) (value ?id) (certainty ?certezza))
+  ))
+
+; (defrule itinerario-preferito-per-località
+;   (itinerario
+;     (id ?id-it-nuovo)
+;     (località $?località-itinerario ?nuova-località))
+;   (itinerario
+;     (id ?id-it-precedente)
+;     (località $?località-itinerario))
+;   (attribute
+;     (name itinerario-preferito-per-località)
+;     (value ?id-it-precedente)
+;     (certainty ?certezza-precedente))
+;   (attribute
+;     (name località-preferita)
+;     (value ?ultima-località)
+;     (certainty ?certezza-nuova-località))
+; =>
+;   (assert (attribute itinerario-preferito-per-località)
+;           (value ?id-it-nuovo)
+;           (certainty (min ?certezza-nuova-località ?certezza-precedente))))
+;
+
 (defrule itenerario-attribute
   (declare (salience -100))
-  (itinerario
-    (id ?id)
-    (località $?località-itinerario))
+  (itinerario (id ?id))
   =>
   (assert (attribute (name itinerario-preferito)
-                    (value (implode$ ?località-itinerario))
+                    (value ?id)
                     (certainty 1))))
 
 
