@@ -18,7 +18,7 @@
   (declare (salience 10000))
   =>
   (set-fact-duplication TRUE)
-  (focus DOMINIO REGOLE PRINT-RESULTS))
+  (focus DOMINIO DOMINIO-ITINERARI REGOLE REASONING PRINT-RESULTS))
 
 (deffunction combined-certainty
   (?cert1 ?cert2)
@@ -65,6 +65,15 @@
     (slot stelle)
     (slot costo)
     (slot posti-liberi))
+
+(deftemplate itinerario
+  (slot id)
+  (multislot località)
+)
+
+(deftemplate alberghi-per-itinerario
+  (slot id-itinerario)
+  (multislot alberghi))
 
 (deffacts query
     (query
@@ -133,49 +142,44 @@
         (raggio 30))
 )
 
-(defmodule REGOLE (export ?ALL) (import MAIN ?ALL) (import DOMINIO ?ALL))
+(defmodule DOMINIO-ITINERARI (export ?ALL) (import MAIN ?ALL) (import DOMINIO ?ALL))
 
 (deffunction distanza-coordinate (?x1 ?y1 ?x2 ?y2)
     (sqrt (+ (** (- ?x1 ?x2) 2) (** (- ?y1 ?y2) 2))))
 
-(defrule località-preferita-per-turismo
-    (query (turismo $? ?tipo-turismo $?))
-    (località-tipo-turismo (nome-località ?nome) (tipo ?tipo-turismo) (punteggio ?punteggio))
-=>
-    (assert (attribute (name località-preferita-per-turismo)
-                       (value ?nome)
-                       (certainty (punteggio-località-to-cf ?punteggio)))))
-
-(defrule località-preferita
-  (attribute
-    (name località-preferita-per-regione)
-    (value ?località)
-    (certainty ?certezza-regione))
-  (attribute
-    (name località-preferita-per-turismo)
-    (value ?località)
-    (certainty ?certezza-turismo))
-=>
-  (assert
-    (attribute
-      (name località-preferita)
-      (value ?località)
-      (certainty (min ?certezza-regione ?certezza-turismo)))))
-
-(defrule località-preferita-no-info
+(defrule inizia-itinerario
   (località (nome ?nome-località))
 =>
-  (assert
-    (attribute
-      (name località-preferita-per-regione)
-      (value ?nome-località)
-      (certainty 0)))
-  (assert
-    (attribute
-      (name località-preferita-per-turismo)
-      (value ?nome-località)
-      (certainty 0)))
+  (assert (itinerario (id ?nome-località) (località ?nome-località)))
 )
+
+(defrule continua-itinerario
+  (query (numero-città ?numero-città))
+  (itinerario
+    (id ?id)
+    (località $?località-itinerario ?ultima-località))
+  (località (nome ?ultima-località) (lat ?lat1) (lon ?lon1))
+  (località (nome ?nuova-località) (lat ?lat2) (lon ?lon2))
+  (test (< (+ 1 (length$ $?località-itinerario)) ?numero-città))
+  (test (neq ?ultima-località ?nuova-località))
+  (test (not (member$ ?nuova-località ?località-itinerario)))
+  (test (< (distanza-coordinate ?lat1 ?lon1 ?lat2 ?lon2) 100))
+=>
+  (bind ?nuove-località (create$ ?località-itinerario ?ultima-località ?nuova-località))
+  (assert (itinerario
+    (id (implode$ ?nuove-località))
+    (località ?nuove-località)))
+)
+
+(defrule pulisci-itinerari-incompleti
+  (declare (salience -10))
+  (query (numero-città ?numero-città))
+  ?it <- (itinerario (località $?località))
+  (test (< (length$ ?località) ?numero-città))
+=>
+  (retract ?it))
+
+(defmodule REGOLE (export ?ALL) (import MAIN ?ALL) (import DOMINIO ?ALL)  (import DOMINIO-ITINERARI ?ALL))
 
 (deffunction limita (?min ?max ?num)
   "Confina il valore di ?num tra ?min e ?max."
@@ -223,69 +227,62 @@
                        (value ?nome)
                        (certainty (- ?punteggio 1)))))
 
-(deftemplate itinerario
-  (slot id)
-  (multislot località)
-)
+(defrule località-preferita-per-turismo
+    (query (turismo $? ?tipo-turismo $?))
+    (località-tipo-turismo (nome-località ?nome) (tipo ?tipo-turismo) (punteggio ?punteggio))
+=>
+    (assert (attribute (name località-preferita-per-turismo)
+                       (value ?nome)
+                       (certainty (punteggio-località-to-cf ?punteggio)))))
 
-(defrule inizia-itinerario
+
+(defmodule REASONING (export ?ALL) (import MAIN ?ALL) (import DOMINIO ?ALL)  (import DOMINIO-ITINERARI ?ALL) (import REGOLE ?ALL))
+
+(defrule località-preferita-no-info
   (località (nome ?nome-località))
 =>
-  (assert (itinerario (id ?nome-località) (località ?nome-località)))
+  (assert
+    (attribute
+      (name località-preferita-per-regione)
+      (value ?nome-località)
+      (certainty 0)))
+  (assert
+    (attribute
+      (name località-preferita-per-turismo)
+      (value ?nome-località)
+      (certainty 0)))
 )
 
-(defrule continua-itinerario
-  (query (numero-città ?numero-città))
-  (itinerario
-    (id ?id)
-    (località $?località-itinerario ?ultima-località))
-  (località (nome ?ultima-località) (lat ?lat1) (lon ?lon1))
-  (località (nome ?nuova-località) (lat ?lat2) (lon ?lon2))
-  (test (< (+ 1 (length$ $?località-itinerario)) ?numero-città))
-  (test (neq ?ultima-località ?nuova-località))
-  (test (not (member$ ?nuova-località ?località-itinerario)))
-  (test (< (distanza-coordinate ?lat1 ?lon1 ?lat2 ?lon2) 100))
+(defrule località-preferita
+  (attribute
+    (name località-preferita-per-regione)
+    (value ?località)
+    (certainty ?certezza-regione))
+  (attribute
+    (name località-preferita-per-turismo)
+    (value ?località)
+    (certainty ?certezza-turismo))
 =>
-  (bind ?nuove-località (create$ ?località-itinerario ?ultima-località ?nuova-località))
-  (assert (itinerario
-    (id (implode$ ?nuove-località))
-    (località ?nuove-località)))
-)
+  (assert
+    (attribute
+      (name località-preferita)
+      (value ?località)
+      (certainty (min ?certezza-regione ?certezza-turismo)))))
 
-(defrule pulisci-itinerari-incompleti
-  (declare (salience -10))
-  (query (numero-città ?numero-città))
-  ?it <- (itinerario (località $?località))
-  (test (< (length$ ?località) ?numero-città))
-=>
-  (retract ?it))
 
 (defrule itinerario-preferito-per-località
-  (declare (salience -103))
   (itinerario (id ?id) (località $?lista-località))
   =>
-  (bind ?certezza 1)
   (do-for-all-facts ((?att attribute))
     (and
       (eq ?att:name località-preferita)
       (member$ ?att:value ?lista-località))
-    ;(bind ?certezza (min (fact-slot-value ?att certainty) ?certezza)))
   (assert
     (attribute
       (name itinerario-preferito-per-località)
       (value ?id)
-      (certainty ?certezza))
+      (certainty (fact-slot-value ?att certainty)))
   )))
-
-
-(defrule itenerario-attribute
-  (declare (salience -100))
-  (itinerario (id ?id))
-  =>
-  (assert (attribute (name itinerario-preferito)
-                    (value ?id)
-                    (certainty 1))))
-
 
 (defmodule PRINT-RESULTS (import MAIN ?ALL))
 
