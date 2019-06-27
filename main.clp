@@ -70,7 +70,7 @@
     (query
       (numero-città 3)
       (turismo balneare)
-      (regioni-da-includere Piemonte)
+      (regioni-da-includere Piemonte Lombardia Marche Puglia)
     )
   )
 
@@ -79,42 +79,57 @@
       (nome-località Torino)
       (tipo balneare)
       (punteggio 3))
+    (località-tipo-turismo (nome-località Torino) (tipo balneare) (punteggio 5))
+    (località-tipo-turismo (nome-località Milano) (tipo balneare) (punteggio 5))
+    (località-tipo-turismo (nome-località MonculoPiemontese) (tipo balneare) (punteggio 5))
+    (località-tipo-turismo (nome-località Macerata) (tipo balneare) (punteggio 5))
+    (località-tipo-turismo (nome-località Camerino) (tipo balneare) (punteggio 5))
+    (località-tipo-turismo (nome-località acquasparta) (tipo balneare) (punteggio 5))
+    (località-tipo-turismo (nome-località ColonettaDiProdo) (tipo balneare) (punteggio 5))
+    (località-tipo-turismo (nome-località Foggia) (tipo balneare) (punteggio 5))
+    (località-tipo-turismo (nome-località OrtaNova) (tipo balneare) (punteggio 5))
+    (località-tipo-turismo (nome-località DuaneraLaRocca) (tipo balneare) (punteggio 5))
+    (località-tipo-turismo (nome-località Zapponeta) (tipo balneare) (punteggio 5))
 )
 
+;LATITUDINE        LONGITUDINE
+;EST 50 100       SUD 0 -100
+;CENTRO 0 50      CENTRO 0 100
+;OVEST -50 0      NORD 100 200
 (deffacts località
-    (località (nome Torino) (lat -150) (lon 150))
-    (località (nome Milano) (lat 150) (lon 150))
-    (località (nome MonculoPiemontese) (lat -150) (lon 187))
-    (località (nome Macerata) (lat -140) (lon -150))
-    (località (nome Camerino) (lat -100) (lon -150))
-    (località (nome acquasparta) (lat 50) (lon -120))
-    (località (nome ColonettaDiProdo)(lat 75) (lon -100))
-    (località (nome Foggia) (lat 150) (lon -150))
-    (località (nome OrtaNova) (lat 249) (lon -150))
-    (località (nome DuaneraLaRocca) (lat 348) (lon -150))
-    (località (nome Zapponeta) (lat 448) (lon -150))
+    (località (nome Torino) (lat -30) (lon 150))
+    (località (nome Milano) (lat 20) (lon 150))
+    (località (nome MonculoPiemontese) (lat -50) (lon 188))
+    (località (nome Macerata) (lat 80 ) (lon 80))
+    (località (nome Camerino) (lat 80) (lon 70))
+    (località (nome acquasparta) (lat 70 ) (lon 60))
+    (località (nome ColonettaDiProdo)(lat 75) (lon 50))
+    (località (nome Foggia) (lat 80) (lon -50))
+    (località (nome OrtaNova) (lat 70) (lon -80))
+    (località (nome DuaneraLaRocca) (lat 20) (lon -10))
+    (località (nome Zapponeta) (lat 10) (lon -100))
     )
 
 (deffacts regioni
     (regione
         (nome Piemonte)
-        (lat -150)
-        (lon 150)
+        (lat -30)
+        (lon 140)
         (raggio 30))
     (regione
         (nome Lombardia)
-        (lat 150)
+        (lat 30)
         (lon 150)
         (raggio 30))
     (regione
         (nome Marche)
-        (lat -150)
-        (lon -150)
+        (lat 90)
+        (lon 90)
         (raggio 30))
     (regione
         (nome Puglia)
-        (lat 150)
-        (lon -150)
+        (lat 70)
+        (lon -30)
         (raggio 30))
 )
 
@@ -245,65 +260,23 @@
 =>
   (retract ?it))
 
-;(defrule itinerario-preferito-per-località-start
-;  (declare (salience -101))
-;  (itinerario (id ?id))
-;=>
-;  (assert (attribute
-;            (name itinerario-preferito-per-località)
-;            (value ?id)
-;            (certainty 1))))
-
-;(defrule itinerario-preferito-per-località
-;  (declare (salience -102))
-;  (itinerario
-;    (id ?id)
-;    (località $?località-iniziali ?località-corrente $?località-finali))
-;  (attribute
-;    (name località-preferita)
-;    (value ?località-corrente)
-;    (certainty ?certezza-località))
-;  ?att <- (exists (attribute
-;    (name itinerario-preferito-per-località)
-;    (value ?id)))
-;  =>
-;  (printout t "Regola attivata" crlf)
-;  (modify ?att (certainty (min (fact-slot-value ?att certainty) ?certezza-località))))
-
 (defrule itinerario-preferito-per-località
   (declare (salience -103))
   (itinerario (id ?id) (località $?lista-località))
   =>
-  (printout t "Regola attivata")
-  (bind ?certezza -1)
+  (bind ?certezza 1)
   (do-for-all-facts ((?att attribute))
     (and
       (eq ?att:name località-preferita)
       (member$ ?att:value ?lista-località))
-    (bind ?certezza (max (fact-slot-value ?att certainty) ?certezza)))
-  (assert (attribute (name itinerario-preferito-per-località) (value ?id) (certainty ?certezza))
-  ))
+    ;(bind ?certezza (min (fact-slot-value ?att certainty) ?certezza)))
+  (assert
+    (attribute
+      (name itinerario-preferito-per-località)
+      (value ?id)
+      (certainty ?certezza))
+  )))
 
-; (defrule itinerario-preferito-per-località
-;   (itinerario
-;     (id ?id-it-nuovo)
-;     (località $?località-itinerario ?nuova-località))
-;   (itinerario
-;     (id ?id-it-precedente)
-;     (località $?località-itinerario))
-;   (attribute
-;     (name itinerario-preferito-per-località)
-;     (value ?id-it-precedente)
-;     (certainty ?certezza-precedente))
-;   (attribute
-;     (name località-preferita)
-;     (value ?ultima-località)
-;     (certainty ?certezza-nuova-località))
-; =>
-;   (assert (attribute itinerario-preferito-per-località)
-;           (value ?id-it-nuovo)
-;           (certainty (min ?certezza-nuova-località ?certezza-precedente))))
-;
 
 (defrule itenerario-attribute
   (declare (salience -100))
