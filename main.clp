@@ -18,7 +18,7 @@
   (declare (salience 10000))
   =>
   (set-fact-duplication TRUE)
-  (focus DOMINIO DOMINIO-ITINERARI REGOLE REASONING PRINT-RESULTS))
+  (focus DOMINIO DOMINIO-ITINERARI DOMINIO-ALBERGHI-PER-ITINERARIO REGOLE REASONING PRINT-RESULTS))
 
 (deffunction combined-certainty
   (?cert1 ?cert2)
@@ -61,9 +61,8 @@
 
 (deftemplate albergo
     (slot id)
-    (slot città)
+    (slot località)
     (slot stelle)
-    (slot costo)
     (slot posti-liberi))
 
 (deftemplate itinerario
@@ -117,6 +116,31 @@
     (località (nome OrtaNova) (lat 70) (lon -80))
     (località (nome DuaneraLaRocca) (lat 20) (lon -10))
     (località (nome Zapponeta) (lat 10) (lon -100))
+    )
+
+(deffacts alberghi
+    (albergo (id Torino1) (località Torino) (stelle 4) (posti-liberi 5))
+    (albergo (id Torino2) (località Torino) (stelle 2) (posti-liberi 5))
+    (albergo (id Milano1) (località Milano) (stelle 4) (posti-liberi 5))
+    (albergo (id Milano2) (località Milano) (stelle 2) (posti-liberi 5))
+    (albergo (id MonculoPiemontese1) (località MonculoPiemontese) (stelle 4) (posti-liberi 5))
+    (albergo (id MonculoPiemontese2) (località MonculoPiemontese) (stelle 2) (posti-liberi 5))
+    (albergo (id Macerata1) (località Macerata) (stelle 4) (posti-liberi 5))
+    (albergo (id Macerata2) (località Macerata) (stelle 2) (posti-liberi 5))
+    (albergo (id Camerino1) (località Camerino) (stelle 4) (posti-liberi 5))
+    (albergo (id Camerino2) (località Camerino) (stelle 2) (posti-liberi 5))
+    (albergo (id acquasparta1) (località acquasparta) (stelle 4) (posti-liberi 5))
+    (albergo (id acquasparta2) (località acquasparta) (stelle 2) (posti-liberi 5))
+    (albergo (id ColonettaDiProdo1) (località ColonettaDiProdo)(stelle 4) (posti-liberi 5))
+    (albergo (id ColonettaDiProdo2) (località ColonettaDiProdo)(stelle 2) (posti-liberi 5))
+    (albergo (id Foggia1) (località Foggia) (stelle 4) (posti-liberi 5))
+    (albergo (id Foggia2) (località Foggia) (stelle 2) (posti-liberi 5))
+    (albergo (id OrtaNova1) (località OrtaNova) (stelle 4) (posti-liberi 5))
+    (albergo (id OrtaNova2) (località OrtaNova) (stelle 2) (posti-liberi 5))
+    (albergo (id DuaneraLaRocca1) (località DuaneraLaRocca) (stelle 4) (posti-liberi 5))
+    (albergo (id DuaneraLaRocca2) (località DuaneraLaRocca) (stelle 2) (posti-liberi 5))
+    (albergo (id Zapponeta1) (località Zapponeta) (stelle 4) (posti-liberi 5))
+    (albergo (id Zapponeta2) (località Zapponeta) (stelle 2) (posti-liberi 5))
     )
 
 (deffacts regioni
@@ -178,6 +202,63 @@
   (test (< (length$ ?località) ?numero-città))
 =>
   (retract ?it))
+
+(defmodule DOMINIO-ALBERGHI-PER-ITINERARIO (export ?ALL) (import MAIN ?ALL) (import DOMINIO ?ALL))
+
+(defrule inizia-lista-alberghi
+  (itinerario (id ?id-itinerario))
+=>
+  (assert
+    (alberghi-per-itinerario
+      (id-itinerario ?id-itinerario)
+      (alberghi)))
+)
+
+(defrule continua-lista-alberghi
+  (itinerario (id ?id-itinerario) (località $?lista-località))
+=>
+  (foreach ?località ?lista-località
+    (do-for-all-facts ((?alb-itinerario alberghi-per-itinerario))
+      (eq ?alb-itinerario:id-itinerario ?id-itinerario)
+      (do-for-all-facts ((?albergo albergo))
+        (eq ?albergo:località ?località)
+        (printout t "we we we")
+        (duplicate ?alb-itinerario
+          (alberghi (fact-slot-value ?alb-itinerario alberghi) ?albergo)))
+    )
+))
+
+;   (alberghi-per-itinerario (id-itinerario ?id-itinerario) (alberghi $?alberghi ?ultimo-albergo))
+;   (albergo (id ?ultimo-albergo) (località ?località-ultimo-alb))
+;   (itinerario (id ?id-itinerario) (località $? ?località-ultimo-alb ?località-successiva $?))
+;   (albergo (id ?id-albergo) (località ?località-successiva))
+;   ;(test (< (+ 1 (length$ ?alberghi)) (+ 1 (length$ ?località))))
+; =>
+;   (assert
+;     (alberghi-per-itinerario
+;       (id-itinerario ?id-itinerario)
+;       (alberghi ?alberghi ?id-albergo)
+;       ))
+
+(defrule pulisci-liste-alberghi-incomplete
+  (declare (salience -10))
+  ?alb <- (alberghi-per-itinerario (id-itinerario ?id-itinerario) (alberghi $?alberghi))
+  (itinerario (id ?id-itinerario) (località ?prima-località $?località))
+  (test (< (length$ ?alberghi) (+ 1 (length$ ?località))))
+=>
+  (retract ?alb))
+
+(defrule stampa-liste-alberghi
+  (declare (salience -20))
+  (alberghi-per-itinerario (id-itinerario ?id-itinerario) (alberghi $?alberghi))
+=>
+  (assert
+    (attribute
+      (name alberghi-per-itinerario)
+      (value (str-cat ?id-itinerario " -> " (implode$ ?alberghi)))
+      (certainty 1)
+    ))
+  )
 
 (defmodule REGOLE (export ?ALL) (import MAIN ?ALL) (import DOMINIO ?ALL)  (import DOMINIO-ITINERARI ?ALL))
 
