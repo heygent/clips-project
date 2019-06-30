@@ -1,7 +1,7 @@
 (defmodule MAIN (export ?ALL))
 
 (deftemplate query
-    (slot durata)
+    (slot durata (default 5))
     (slot numero-persone)
     (slot numero-città (default 4))
     (multislot regioni-da-includere)
@@ -62,7 +62,7 @@
 (deftemplate albergo
     (slot id)
     (slot località)
-    (slot stelle)
+    (slot stelle (type INTEGER))
     (slot posti-liberi))
 
 (deftemplate itinerario
@@ -71,11 +71,20 @@
 )
 
 (deftemplate alberghi-per-itinerario
+  (slot id)
   (slot id-itinerario)
-  (multislot alberghi))
+  (multislot alberghi)
+)
+
+(deftemplate pernottamenti-per-itinerario
+  (slot id-itinerario)
+  (slot id-alberghi-per-itinerario)
+  (multislot pernottamenti)
+)
 
 (deffacts query
     (query
+
       (numero-città 3)
       (turismo balneare)
       (regioni-da-includere Piemonte Lombardia Marche Puglia)
@@ -205,48 +214,129 @@
 
 (defmodule DOMINIO-ALBERGHI-PER-ITINERARIO (export ?ALL) (import MAIN ?ALL) (import DOMINIO ?ALL))
 
-(defrule inizia-lista-alberghi
-  (itinerario (id ?id-itinerario))
+(defrule crea-liste-alberghi
+  (itinerario (id ?id-itinerario) (località $?lista-località))
 =>
   (assert
     (alberghi-per-itinerario
       (id-itinerario ?id-itinerario)
       (alberghi)))
+  (foreach ?località ?lista-località
+    (bind ?tutti-alb-per-it
+      (find-all-facts ((?alb-per-it alberghi-per-itinerario))
+        (eq ?alb-per-it:id-itinerario ?id-itinerario)
+      ))
+    (do-for-all-facts ((?albergo albergo))
+      (eq ?albergo:località ?località)
+      (foreach ?alb-per-it ?tutti-alb-per-it
+        (bind ?alberghi-più-nuovo (create$ (fact-slot-value ?alb-per-it alberghi) (fact-slot-value ?albergo id)))
+        (duplicate ?alb-per-it
+          (id (implode$ ?alberghi-più-nuovo))
+          (alberghi ?alberghi-più-nuovo)))
+    )
+    (foreach ?alb-per-it ?tutti-alb-per-it
+        (retract ?alb-per-it)))
 )
 
-(defrule continua-lista-alberghi
-  (itinerario (id ?id-itinerario) (località $?lista-località))
+(defrule pernottamenti
+  (alberghi-per-itinerario
+    (id ?id)
+    (id-itinerario ?id-itinerario)
+    (alberghi $?id-alberghi))
+  (query (durata ?giorni))
 =>
-  (foreach ?località ?lista-località
-    (do-for-all-facts ((?alb-itinerario alberghi-per-itinerario))
-      (eq ?alb-itinerario:id-itinerario ?id-itinerario)
-      (do-for-all-facts ((?albergo albergo))
-        (eq ?albergo:località ?località)
-        (printout t "we we we")
-        (duplicate ?alb-itinerario
-          (alberghi (fact-slot-value ?alb-itinerario alberghi) ?albergo)))
+  (bind ?min-stelle 10)
+  (bind ?indice-min-albergo 0)
+
+  (loop-for-count (?i (length$ ?id-alberghi)) do
+    (bind ?id-albergo (nth$ ?i ?id-alberghi))
+    (do-for-fact ((?albergo albergo)) (eq ?albergo:id ?id-albergo)
+      (bind ?stelle-albergo (fact-slot-value ?albergo stelle))
+      (if (< ?stelle-albergo ?min-stelle) then
+        (bind ?min-stelle ?stelle-albergo)
+        (bind ?indice-min-albergo ?i))
     )
-))
+  )
 
-;   (alberghi-per-itinerario (id-itinerario ?id-itinerario) (alberghi $?alberghi ?ultimo-albergo))
-;   (albergo (id ?ultimo-albergo) (località ?località-ultimo-alb))
-;   (itinerario (id ?id-itinerario) (località $? ?località-ultimo-alb ?località-successiva $?))
-;   (albergo (id ?id-albergo) (località ?località-successiva))
-;   ;(test (< (+ 1 (length$ ?alberghi)) (+ 1 (length$ ?località))))
-; =>
-;   (assert
-;     (alberghi-per-itinerario
-;       (id-itinerario ?id-itinerario)
-;       (alberghi ?alberghi ?id-albergo)
-;       ))
+  (bind ?pernottamenti (create$))
 
-(defrule pulisci-liste-alberghi-incomplete
-  (declare (salience -10))
-  ?alb <- (alberghi-per-itinerario (id-itinerario ?id-itinerario) (alberghi $?alberghi))
-  (itinerario (id ?id-itinerario) (località ?prima-località $?località))
-  (test (< (length$ ?alberghi) (+ 1 (length$ ?località))))
+  (bind ?giorni-divisi-equamente (div ?giorni (length ?id-alberghi)))
+  (bind ?giorni-rimanenti (mod ?giorni (length ?id-alberghi)))
+
+  (loop-for-count (?i 1 (length$ ?id-alberghi))  do
+    (bind ?pernottamenti (create$ ?pernottamenti ?giorni-divisi-equamente))
+  )
+
+  ;(printout t (implode$ ?id-alberghi) ": min-albergo: " ?indice-min-albergo ", min-stelle: " ?min-stelle crlf)
+
+  (bind ?pernottamenti
+    (replace$ ?pernottamenti ?indice-min-albergo ?indice-min-albergo
+      (+ ?giorni-divisi-equamente ?giorni-rimanenti)))
+
+  ;(printout t (implode$ ?pernottamenti) crlf)
+
+  (assert
+    (pernottamenti-per-itinerario
+      (id-itinerario ?id-itinerario)
+      (id-alberghi-per-itinerario ?id)
+      (pernottamenti ?pernottamenti)))
+)
+
+
+;(defrule pernottamenti
+;  (alberghi-per-itinerario
+;    (id-itinerario ?id-itinerario)
+;    (alberghi $?alberghi))
+;  (query
+;    (durata ?giorni)
+;    )
+;=>
+;  (bind ?pernottamenti (create$))
+;  (bind ?minimo (find-fact ((?alb albergo)) (eq ?alb:id (nth$ 1 ?alberghi))))
+;
+;  (foreach ?id-albergo ?alberghi
+;    (bind ?albergo (find-fact ((?alb albergo)) (eq ?alb:id ?id-albergo)))
+;
+;   (if (< (fact-slot-value ?albergo stelle) (fact-slot-value ?minimo stelle))
+;     then
+;     (bind ?minimo ?albergo)
+;    )
+;  )
+
+;  (bind ?giorni-divisi-equamente (div (length ?alberghi) ?giorni))
+;  (bind ?giorni-rimanenti (mod (length ?alberghi) ?giorni))
+;
+;  (foreach ?id-albergo ?alberghi
+;    (bind ?albergo (find-fact ((?alb albergo)) (eq ?alb:id ?id-albergo))
+;    (bind ?giorni-pernottamento
+;      (if (eq ?albergo ?minimo)
+;        then
+;        (+ ?giorni-rimanenti ?giorni-divisi-equamente)
+;        else
+;        ?giorni-divisi-equamente)
+;    (bind ?pernottamenti (create$ ?pernottamenti ?giorni-pernottamento))
+;    )))
+;
+;    (assert
+;      (pernottamenti-per-itinerario
+;        (id-itinerario ?id-itinerario)
+;        (pernottamenti ?pernottamenti)))
+;)
+
+(defrule stampa-pernottamenti
+  (pernottamenti-per-itinerario
+    (id-alberghi-per-itinerario ?id-alb-per-it) (pernottamenti $?pernottamenti))
+  (alberghi-per-itinerario
+    (id ?id-alb-per-it) (alberghi $?alberghi))
 =>
-  (retract ?alb))
+  (assert
+    (attribute
+      (name pernottamenti-per-itinerario)
+      (value (str-cat (implode$ ?alberghi) " -> " (implode$ ?pernottamenti)))
+      (certainty 1)
+
+      ))
+)
 
 (defrule stampa-liste-alberghi
   (declare (salience -20))
@@ -373,7 +463,7 @@
       (name ?name)
       (value ?value)
       (certainty ?certainty))
-  ; (test (eq itinerario-preferito ?name))
+   (test (eq pernottamenti-per-itinerario ?name))
   =>
   ;(retract ?rem)
   (format t " %-40s %-30s %2f%n" ?name ?value ?certainty))
