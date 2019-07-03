@@ -28,6 +28,15 @@
     (return (+ (+ ?cert1 ?cert2) (* ?cert1 ?cert2))))
   (/ (+ ?cert1 ?cert2) (- 1 (min (abs ?cert1) (abs ?cert2)))))
 
+(deffunction da-stelle-a-prezzo
+  (?stelle)
+  (+ 25 (* ?stelle 25))
+  )
+
+(deffunction limita (?min ?max ?num)
+  "Confina il valore di ?num tra ?min e ?max."
+  (min ?max (max ?min ?num)))
+
 (defrule combine-certainties
   (declare (salience 100)
            (auto-focus TRUE))
@@ -83,12 +92,13 @@
 )
 
 (deffacts query
-    (query
-
-      (numero-città 3)
-      (turismo balneare)
-      (regioni-da-includere Piemonte Lombardia Marche Puglia)
-    )
+  (query
+   (budget 40)
+   (numero-persone 3)
+   (numero-città 3)
+   (turismo balneare)
+   (regioni-da-includere Piemonte Lombardia Marche Puglia)
+   )
   )
 
 (deffacts località-tipo-turismo
@@ -366,6 +376,33 @@
       ))
 )
 
+(defrule alberghi-preferiti-per-budget
+  (query (budget ?budget) (numero-persone ?persone))
+  (alberghi-per-itinerario (id ?id) (alberghi $?id-alberghi))
+  (pernottamenti-per-itinerario (id-alberghi-per-itinerario ?id) (pernottamenti $?pernottamenti))
+  =>
+  (bind ?camere-necessarie (+ (div ?persone 2) (mod ?persone 2)))
+  (bind ?costo-totale 0)
+
+  (loop-for-count (?i (length$ ?id-alberghi))
+    (do-for-fact ((?albergo albergo)) (eq ?albergo:id (nth$ ?i ?id-alberghi))
+      (bind ?pernottamenti-albergo (nth$ ?i ?pernottamenti))
+      (bind ?stelle-albergo (fact-slot-value ?albergo stelle))
+      (bind ?costo-albergo (* (da-stelle-a-prezzo ?stelle-albergo) ?camere-necessarie ?pernottamenti-albergo))
+      (bind ?costo-totale (+ ?costo-totale ?costo-albergo)))
+  )
+
+  (bind ?certainty
+    (if (<= ?costo-totale ?budget) then 1
+     else (limita -1 1 (- (/ (/ ?costo-totale ?budget) 2) 1))))
+
+  (assert 
+    (attribute 
+      (name alberghi-preferiti-per-budget)
+      (value ?id)
+      (certainty ?certainty)))
+)
+
 (defrule stampa-liste-alberghi
   (declare (salience -20))
   (alberghi-per-itinerario (id-itinerario ?id-itinerario) (alberghi $?alberghi))
@@ -380,9 +417,6 @@
 
 (defmodule REGOLE (export ?ALL) (import MAIN ?ALL) (import DOMINIO ?ALL)  (import DOMINIO-ITINERARI ?ALL))
 
-(deffunction limita (?min ?max ?num)
-  "Confina il valore di ?num tra ?min e ?max."
-  (min ?max (max ?min ?num)))
 
 (defglobal ?*MAX-DISTANZA* = 10)
 
@@ -491,7 +525,7 @@
       (name ?name)
       (value ?value)
       (certainty ?certainty))
-   (test (eq pernottamenti-per-itinerario ?name))
+   (test (member$ ?name (create$ alberghi-preferiti-per-budget )))
   =>
   ;(retract ?rem)
   (format t " %-40s %-30s %2f%n" ?name ?value ?certainty))
