@@ -134,22 +134,22 @@
     (albergo (id Milano2) (località Milano) (stelle 2) (camere-libere 5))
     (albergo (id MonculoPiemontese1) (località MonculoPiemontese) (stelle 4) (camere-libere 5))
     (albergo (id MonculoPiemontese2) (località MonculoPiemontese) (stelle 2) (camere-libere 5))
-    (albergo (id Macerata1) (località Macerata) (stelle 4) (camere-libere 5))
-    (albergo (id Macerata2) (località Macerata) (stelle 2) (camere-libere 5))
-    (albergo (id Camerino1) (località Camerino) (stelle 4) (camere-libere 5))
-    (albergo (id Camerino2) (località Camerino) (stelle 2) (camere-libere 5))
-    (albergo (id acquasparta1) (località acquasparta) (stelle 4) (camere-libere 5))
-    (albergo (id acquasparta2) (località acquasparta) (stelle 2) (camere-libere 5))
-    (albergo (id ColonettaDiProdo1) (località ColonettaDiProdo)(stelle 4) (camere-libere 5))
-    (albergo (id ColonettaDiProdo2) (località ColonettaDiProdo)(stelle 2) (camere-libere 5))
-    (albergo (id Foggia1) (località Foggia) (stelle 4) (camere-libere 5))
-    (albergo (id Foggia2) (località Foggia) (stelle 2) (camere-libere 5))
-    (albergo (id OrtaNova1) (località OrtaNova) (stelle 4) (camere-libere 5))
-    (albergo (id OrtaNova2) (località OrtaNova) (stelle 2) (camere-libere 5))
-    (albergo (id DuaneraLaRocca1) (località DuaneraLaRocca) (stelle 4) (camere-libere 5))
-    (albergo (id DuaneraLaRocca2) (località DuaneraLaRocca) (stelle 2) (camere-libere 5))
-    (albergo (id Zapponeta1) (località Zapponeta) (stelle 4) (camere-libere 5))
-    (albergo (id Zapponeta2) (località Zapponeta) (stelle 2) (camere-libere 5))
+    (albergo (id Macerata1) (località Macerata) (stelle 4) (camere-libere 1))
+    (albergo (id Macerata2) (località Macerata) (stelle 2) (camere-libere 1))
+    (albergo (id Camerino1) (località Camerino) (stelle 4) (camere-libere 1))
+    (albergo (id Camerino2) (località Camerino) (stelle 2) (camere-libere 1))
+    (albergo (id acquasparta1) (località acquasparta) (stelle 4) (camere-libere 1))
+    (albergo (id acquasparta2) (località acquasparta) (stelle 2) (camere-libere 1))
+    (albergo (id ColonettaDiProdo1) (località ColonettaDiProdo)(stelle 4) (camere-libere 1))
+    (albergo (id ColonettaDiProdo2) (località ColonettaDiProdo)(stelle 2) (camere-libere 1))
+    (albergo (id Foggia1) (località Foggia) (stelle 4) (camere-libere 1))
+    (albergo (id Foggia2) (località Foggia) (stelle 2) (camere-libere 1))
+    (albergo (id OrtaNova1) (località OrtaNova) (stelle 4) (camere-libere 1))
+    (albergo (id OrtaNova2) (località OrtaNova) (stelle 2) (camere-libere 1))
+    (albergo (id DuaneraLaRocca1) (località DuaneraLaRocca) (stelle 4) (camere-libere 1))
+    (albergo (id DuaneraLaRocca2) (località DuaneraLaRocca) (stelle 2) (camere-libere 1))
+    (albergo (id Zapponeta1) (località Zapponeta) (stelle 4) (camere-libere 1))
+    (albergo (id Zapponeta2) (località Zapponeta) (stelle 2) (camere-libere 1))
     )
 
 (deffacts regioni
@@ -237,6 +237,34 @@
     (foreach ?alb-per-it ?tutti-alb-per-it
         (retract ?alb-per-it)))
 )
+
+(defrule elimina-alberghi-per-disponibilità
+  (alberghi-per-itinerario
+    (id ?id)
+    (alberghi $?lista-alberghi)
+  )
+  (query (numero-persone ?persone))
+=>
+  (bind ?camere-necessarie (+ (div ?persone 2) (mod ?persone 2)))
+
+  (foreach ?albergo ?lista-alberghi
+
+    ; (bind ?albergo-della-lista
+    ;   (find-all-facts ((?alb albergo))
+    ;     (eq ?alb:lista-alberghi ?lista-alberghi)
+    ;   )
+    ; )
+    (do-for-fact ((?alb albergo)) (eq ?alb:id ?albergo)
+
+      (if (> ?camere-necessarie (fact-slot-value ?alb camere-libere)) then
+        (do-for-fact ((?lista alberghi-per-itinerario)) (eq ?lista:id ?id)
+            (retract ?lista)
+        )
+      )
+    )
+  )
+)
+
 
 (defrule pernottamenti
   (alberghi-per-itinerario
