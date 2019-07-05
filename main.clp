@@ -385,22 +385,29 @@
 (defrule alberghi-preferiti-per-budget
   (query (budget ?budget) (numero-persone ?persone))
   (alberghi-per-itinerario (id ?id) (alberghi $?id-alberghi))
-  (pernottamenti-per-itinerario (id-alberghi-per-itinerario ?id) (pernottamenti $?pernottamenti))
+  (pernottamenti-per-itinerario
+    (id-alberghi-per-itinerario ?id)
+    (pernottamenti $?pernottamenti))
   =>
   (bind ?camere-necessarie (+ (div ?persone 2) (mod ?persone 2)))
   (bind ?costo-totale 0)
 
-  (loop-for-count (?i (length$ ?id-alberghi))
-    (do-for-fact ((?albergo albergo)) (eq ?albergo:id (nth$ ?i ?id-alberghi))
-      (bind ?pernottamenti-albergo (nth$ ?i ?pernottamenti))
-      (bind ?stelle-albergo (fact-slot-value ?albergo stelle))
-      (bind ?costo-albergo (* (da-stelle-a-prezzo ?stelle-albergo) ?camere-necessarie ?pernottamenti-albergo))
+  (foreach ?id-albergo ?id-alberghi
+    (do-for-fact ((?albergo albergo))
+      (eq ?albergo:id ?id-albergo)
+      (bind ?pernottamenti-albergo (nth$ ?id-albergo-index ?pernottamenti))
+      (bind ?costo-albergo
+        (*
+          (da-stelle-a-prezzo ?albergo:stelle)
+          ?camere-necessarie
+          ?pernottamenti-albergo))
       (bind ?costo-totale (+ ?costo-totale ?costo-albergo)))
   )
 
   ; 1 - (costo - budget) / soglia
   (bind ?certainty
-     (limita -1 1 (- 1 (/ (- ?costo-totale ?budget) ?*SOGLIA-MAX-SUPERAMENTO-PREZZO*))))
+     (limita -1 1
+       (- 1 (/ (- ?costo-totale ?budget) ?*SOGLIA-MAX-SUPERAMENTO-PREZZO*))))
 
   (if ?*DEBUG* then
     (printout t "defrule alberghi-preferiti-per-budget" crlf)
@@ -441,9 +448,7 @@
   (bind ?lista-alberghi-migliore nil)
 
   (do-for-all-facts
-    (
-    (?alb-per-it alberghi-per-itinerario)
-    (?att attribute))
+    ((?alb-per-it alberghi-per-itinerario) (?att attribute))
     (and
       (eq ?alb-per-it:id-itinerario ?id-itinerario)
       (eq ?att:name alberghi-preferiti)
@@ -454,23 +459,11 @@
     (bind ?lista-alberghi-migliore ?alb-per-it)
   )
   (if (neq ?lista-alberghi-migliore nil)
-  then
-  (modify ?lista-alberghi-migliore (definitivo TRUE))
-  else (retract ?itinerario))
-)
-
-
-(defrule stampa-liste-alberghi
-  (declare (salience -20))
-  (alberghi-per-itinerario (id-itinerario ?id-itinerario) (alberghi $?alberghi) (definitivo TRUE))
-=>
-  (assert
-    (attribute
-      (name alberghi-per-itinerario)
-      (value (str-cat ?id-itinerario " -> " (implode$ ?alberghi)))
-      (certainty 1)
-    ))
+    then
+    (modify ?lista-alberghi-migliore (definitivo TRUE))
+    else (retract ?itinerario)
   )
+)
 
 (defmodule REGOLE (export ?ALL) (import MAIN ?ALL) (import DOMINIO ?ALL)  (import DOMINIO-ITINERARI ?ALL))
 
