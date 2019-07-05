@@ -200,6 +200,10 @@
   (assert (itinerario (id ?nome-località) (località ?nome-località)))
 )
 
+(deffunction sort-cmp-string
+  (?a ?b)
+  (> (str-compare ?a ?b) 0))
+
 (defrule continua-itinerario
   (query (numero-città ?numero-città))
   (itinerario
@@ -214,9 +218,17 @@
 =>
   (bind ?nuove-località (create$ ?località-itinerario ?ultima-località ?nuova-località))
   (assert (itinerario
-    (id (implode$ ?nuove-località))
+    (id (implode$ (sort sort-cmp-string ?nuove-località)))
     (località ?nuove-località)))
 )
+
+(defrule pulisci-itinerari-duplicati
+  (declare (salience -10))
+  ?it1 <- (itinerario (id ?id))
+  ?it2 <- (itinerario (id ?id))
+  (test (neq ?it1 ?it2))
+=>
+  (retract ?it1))
 
 (defrule pulisci-itinerari-incompleti
   (declare (salience -10))
