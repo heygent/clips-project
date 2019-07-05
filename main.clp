@@ -1,5 +1,7 @@
 (defmodule MAIN (export ?ALL))
 
+(defglobal ?*DEBUG* = TRUE)
+
 (deftemplate query
     (slot durata (default 5))
     (slot numero-persone)
@@ -84,6 +86,7 @@
   (slot id)
   (slot id-itinerario)
   (multislot alberghi)
+  (slot definitivo (default FALSE))
 )
 
 (deftemplate pernottamenti-per-itinerario
@@ -94,8 +97,8 @@
 
 (deffacts query
   (query
-   (budget 40)
-   (numero-persone 3)
+   (budget 500)
+   (numero-persone 1)
    (numero-città 3)
    (turismo balneare)
    (regioni-da-includere Piemonte Lombardia Marche Puglia)
@@ -107,17 +110,17 @@
       (nome-località Torino)
       (tipo balneare)
       (punteggio 3))
-    (località-tipo-turismo (nome-località Torino) (tipo balneare) (punteggio 5))
-    (località-tipo-turismo (nome-località Milano) (tipo balneare) (punteggio 5))
-    (località-tipo-turismo (nome-località MonculoPiemontese) (tipo balneare) (punteggio 5))
-    (località-tipo-turismo (nome-località Macerata) (tipo balneare) (punteggio 5))
-    (località-tipo-turismo (nome-località Camerino) (tipo balneare) (punteggio 5))
-    (località-tipo-turismo (nome-località acquasparta) (tipo balneare) (punteggio 5))
+    (località-tipo-turismo (nome-località Torino) (tipo balneare) (punteggio 3))
+    (località-tipo-turismo (nome-località Milano) (tipo balneare) (punteggio 2))
+    (località-tipo-turismo (nome-località MonculoPiemontese) (tipo balneare) (punteggio 4))
+    (località-tipo-turismo (nome-località Macerata) (tipo balneare) (punteggio 1))
+    (località-tipo-turismo (nome-località Camerino) (tipo balneare) (punteggio 2))
+    (località-tipo-turismo (nome-località acquasparta) (tipo balneare) (punteggio 4))
     (località-tipo-turismo (nome-località ColonettaDiProdo) (tipo balneare) (punteggio 5))
-    (località-tipo-turismo (nome-località Foggia) (tipo balneare) (punteggio 5))
-    (località-tipo-turismo (nome-località OrtaNova) (tipo balneare) (punteggio 5))
+    (località-tipo-turismo (nome-località Foggia) (tipo balneare) (punteggio 3))
+    (località-tipo-turismo (nome-località OrtaNova) (tipo balneare) (punteggio 2))
     (località-tipo-turismo (nome-località DuaneraLaRocca) (tipo balneare) (punteggio 5))
-    (località-tipo-turismo (nome-località Zapponeta) (tipo balneare) (punteggio 5))
+    (località-tipo-turismo (nome-località Zapponeta) (tipo balneare) (punteggio 4))
 )
 
 ;LATITUDINE        LONGITUDINE
@@ -358,6 +361,8 @@
       ))
 )
 
+(defglobal ?*SOGLIA-MAX-SUPERAMENTO-PREZZO* = 50)
+
 (defrule alberghi-preferiti-per-budget
   (query (budget ?budget) (numero-persone ?persone))
   (alberghi-per-itinerario (id ?id) (alberghi $?id-alberghi))
@@ -374,9 +379,18 @@
       (bind ?costo-totale (+ ?costo-totale ?costo-albergo)))
   )
 
+  ; 1 - (costo - budget) / soglia
   (bind ?certainty
-    (if (<= ?costo-totale ?budget) then 1
-     else (limita -1 1 (- (/ (/ ?costo-totale ?budget) 2) 1))))
+     (limita -1 1 (- 1 (/ (- ?costo-totale ?budget) ?*SOGLIA-MAX-SUPERAMENTO-PREZZO*))))
+
+  (if ?*DEBUG* then
+    (printout t "defrule alberghi-preferiti-per-budget" crlf)
+    (printout t "Alberghi: " ?id crlf)
+    (printout t "Costo totale: " ?costo-totale crlf)
+    (printout t "Budget: " ?budget crlf)
+    (printout t "CF: " ?certainty crlf)
+    (printout t crlf)
+  )
 
   (assert
     (attribute
@@ -402,9 +416,9 @@
       (certainty (min ?certainty-budget ?certainty-occupazione)))))
 
 (defrule scegli-lista-alberghi-per-cf-maggiore
-  (itinerario (id ?id-itinerario))
+  ?itinerario <- (itinerario (id ?id-itinerario))
 =>
-  (bind ?max-certainty -1)
+  (bind ?max-certainty -2)
   (bind ?lista-alberghi-migliore nil)
 
   (do-for-all-facts
@@ -418,14 +432,18 @@
       (> ?att:certainty ?max-certainty)
     )
     (bind ?max-certainty ?att:certainty)
-    (bind ?lista-alberghi-migliore ?att:value)
+    (bind ?lista-alberghi-migliore ?alb-per-it)
   )
+  (if (neq ?lista-alberghi-migliore nil)
+  then
+  (modify ?lista-alberghi-migliore (definitivo TRUE))
+  else (retract ?itinerario))
 )
 
 
 (defrule stampa-liste-alberghi
   (declare (salience -20))
-  (alberghi-per-itinerario (id-itinerario ?id-itinerario) (alberghi $?alberghi))
+  (alberghi-per-itinerario (id-itinerario ?id-itinerario) (alberghi $?alberghi) (definitivo TRUE))
 =>
   (assert
     (attribute
@@ -536,15 +554,54 @@
       (certainty (fact-slot-value ?att certainty)))
   )))
 
+(defrule itinerario-preferito-per-alberghi
+  (itinerario (id ?id-itinerario))
+  (alberghi-per-itinerario
+    (id-itinerario ?id-itinerario)
+    (id ?id-alb-per-it)
+    (definitivo TRUE))
+  (attribute
+    (name alberghi-preferiti)
+    (value ?id-alb-per-it)
+    (certainty ?cert))
+=>
+  (assert
+    (attribute
+      (name itinerario-preferito-per-alberghi)
+      (value ?id-itinerario)
+      (certainty ?cert)
+    )
+  )
+)
+
+(defrule itinerario-preferito
+  (attribute
+    (name itinerario-preferito-per-località)
+    (value ?id-itinerario)
+    (certainty ?cert-per-località))
+  (attribute
+    (name itinerario-preferito-per-alberghi)
+    (value ?id-itinerario)
+    (certainty ?cert-per-alberghi))
+  =>
+
+  (assert
+    (attribute
+      (name itinerario-preferito)
+      (value ?id-itinerario)
+      (certainty (min ?cert-per-località ?cert-per-alberghi))))
+)
+
 (defmodule PRINT-RESULTS (import MAIN ?ALL))
 
-; (defrule stampa-attributi
-;   ?rem <-
-;     (attribute
-;       (name ?name)
-;       (value ?value)
-;       (certainty ?certainty))
-;    (test (member$ ?name (create$ pernottamenti-per-itinerario )))
-;   =>
-;   ;(retract ?rem)
-;   (format t " %-40s %-30s %2f%n" ?name ?value ?certainty))
+(defrule stampa-attributi
+  ?rem <-
+    (attribute
+      (name ?name)
+      (value ?value)
+      (certainty ?certainty))
+   ;(test (member$ ?name (create$ alberghi-per-itinerario itinerario-preferito itinerario-preferito-per-località itinerario-preferito-per-alberghi)))
+   (test (member$ ?name (create$ itinerario-preferito)))
+  =>
+  ;(retract ?rem)
+  (format t " %-40s %-30s %2f%n" ?name ?value ?certainty))
