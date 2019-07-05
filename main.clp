@@ -73,7 +73,7 @@
     (slot località)
     (slot stelle (type INTEGER))
     (slot camere-libere)
-    (slot occupazione))
+    (slot occupazione (type FLOAT)))
 
 (deftemplate itinerario
   (slot id)
@@ -139,28 +139,28 @@
     )
 
 (deffacts alberghi
-    (albergo (id Torino1) (località Torino) (stelle 4) (camere-libere 5) (occupazione 0.5))
-    (albergo (id Torino2) (località Torino) (stelle 2) (camere-libere 5) (occupazione 0.5))
-    (albergo (id Milano1) (località Milano) (stelle 4) (camere-libere 5) (occupazione 0.5))
+    (albergo (id Torino1) (località Torino) (stelle 4) (camere-libere 5) (occupazione 0.3))
+    (albergo (id Torino2) (località Torino) (stelle 2) (camere-libere 5) (occupazione 0.7))
+    (albergo (id Milano1) (località Milano) (stelle 4) (camere-libere 5) (occupazione 0.7))
     (albergo (id Milano2) (località Milano) (stelle 2) (camere-libere 5) (occupazione 0.5))
     (albergo (id MonculoPiemontese1) (località MonculoPiemontese) (stelle 4) (camere-libere 5) (occupazione 0.5))
-    (albergo (id MonculoPiemontese2) (località MonculoPiemontese) (stelle 2) (camere-libere 5) (occupazione 0.5))
-    (albergo (id Macerata1) (località Macerata) (stelle 4) (camere-libere 1) (occupazione 0.5))
-    (albergo (id Macerata2) (località Macerata) (stelle 2) (camere-libere 1) (occupazione 0.5))
+    (albergo (id MonculoPiemontese2) (località MonculoPiemontese) (stelle 2) (camere-libere 5) (occupazione 0.7))
+    (albergo (id Macerata1) (località Macerata) (stelle 4) (camere-libere 1) (occupazione 0.7))
+    (albergo (id Macerata2) (località Macerata) (stelle 2) (camere-libere 1) (occupazione 0.3))
     (albergo (id Camerino1) (località Camerino) (stelle 4) (camere-libere 1) (occupazione 0.5))
-    (albergo (id Camerino2) (località Camerino) (stelle 2) (camere-libere 1) (occupazione 0.5))
-    (albergo (id acquasparta1) (località acquasparta) (stelle 4) (camere-libere 1) (occupazione 0.5))
-    (albergo (id acquasparta2) (località acquasparta) (stelle 2) (camere-libere 1) (occupazione 0.5))
-    (albergo (id ColonettaDiProdo1) (località ColonettaDiProdo)(stelle 4) (camere-libere 1) (occupazione 0.5))
-    (albergo (id ColonettaDiProdo2) (località ColonettaDiProdo)(stelle 2) (camere-libere 1) (occupazione 0.5))
+    (albergo (id Camerino2) (località Camerino) (stelle 2) (camere-libere 1) (occupazione 0.7))
+    (albergo (id acquasparta1) (località acquasparta) (stelle 4) (camere-libere 1) (occupazione 0.7))
+    (albergo (id acquasparta2) (località acquasparta) (stelle 2) (camere-libere 1) (occupazione 0.3))
+    (albergo (id ColonettaDiProdo1) (località ColonettaDiProdo)(stelle 4) (camere-libere 1) (occupazione 0.7))
+    (albergo (id ColonettaDiProdo2) (località ColonettaDiProdo)(stelle 2) (camere-libere 1) (occupazione 0.7))
     (albergo (id Foggia1) (località Foggia) (stelle 4) (camere-libere 1) (occupazione 0.5))
-    (albergo (id Foggia2) (località Foggia) (stelle 2) (camere-libere 1) (occupazione 0.5))
-    (albergo (id OrtaNova1) (località OrtaNova) (stelle 4) (camere-libere 1) (occupazione 0.5))
-    (albergo (id OrtaNova2) (località OrtaNova) (stelle 2) (camere-libere 1) (occupazione 0.5))
+    (albergo (id Foggia2) (località Foggia) (stelle 2) (camere-libere 1) (occupazione 0.7))
+    (albergo (id OrtaNova1) (località OrtaNova) (stelle 4) (camere-libere 1) (occupazione 0.3))
+    (albergo (id OrtaNova2) (località OrtaNova) (stelle 2) (camere-libere 1) (occupazione 0.7))
     (albergo (id DuaneraLaRocca1) (località DuaneraLaRocca) (stelle 4) (camere-libere 1) (occupazione 0.5))
-    (albergo (id DuaneraLaRocca2) (località DuaneraLaRocca) (stelle 2) (camere-libere 1) (occupazione 0.5))
+    (albergo (id DuaneraLaRocca2) (località DuaneraLaRocca) (stelle 2) (camere-libere 1) (occupazione 0.7))
     (albergo (id Zapponeta1) (località Zapponeta) (stelle 4) (camere-libere 1) (occupazione 0.5))
-    (albergo (id Zapponeta2) (località Zapponeta) (stelle 2) (camere-libere 1) (occupazione 0.5))
+    (albergo (id Zapponeta2) (località Zapponeta) (stelle 2) (camere-libere 1) (occupazione 0.3))
     )
 
 (deffacts regioni
@@ -249,6 +249,29 @@
         (retract ?alb-per-it)))
 )
 
+(defrule cf-alberghi-per-occupazione
+  (alberghi-per-itinerario (id ?id) (alberghi $?lista-alberghi))
+=>
+  (bind ?occupazione-minore 1.0)
+
+  (foreach ?albergo ?lista-alberghi
+    (do-for-fact
+      ((?alb albergo))
+      (and
+        (eq ?alb:id ?albergo)
+        (< ?alb:occupazione ?occupazione-minore))
+      (bind ?occupazione-minore ?alb:occupazione)
+    )
+  )
+
+  (assert
+    (attribute
+      (name alberghi-preferiti-per-occupazione)
+      (value ?id)
+      (certainty (- 1 ?occupazione-minore))
+    ))
+)
+
 (defrule elimina-alberghi-per-disponibilità
   (alberghi-per-itinerario
     (id ?id)
@@ -276,7 +299,6 @@
   )
 )
 
-
 (defrule pernottamenti
   (alberghi-per-itinerario
     (id ?id)
@@ -284,15 +306,15 @@
     (alberghi $?id-alberghi))
   (query (durata ?giorni))
 =>
-  (bind ?min-stelle 10)
+  (bind ?min-occupazione 1)
   (bind ?indice-min-albergo 0)
 
   (loop-for-count (?i (length$ ?id-alberghi)) do
     (bind ?id-albergo (nth$ ?i ?id-alberghi))
     (do-for-fact ((?albergo albergo)) (eq ?albergo:id ?id-albergo)
-      (bind ?stelle-albergo (fact-slot-value ?albergo stelle))
-      (if (< ?stelle-albergo ?min-stelle) then
-        (bind ?min-stelle ?stelle-albergo)
+      (bind ?occupazione (fact-slot-value ?albergo occupazione))
+      (if (< ?occupazione ?min-occupazione) then
+        (bind ?min-occupazione ?occupazione)
         (bind ?indice-min-albergo ?i))
     )
   )
@@ -320,47 +342,6 @@
       (id-alberghi-per-itinerario ?id)
       (pernottamenti ?pernottamenti)))
 )
-
-
-;(defrule pernottamenti
-;  (alberghi-per-itinerario
-;    (id-itinerario ?id-itinerario)
-;    (alberghi $?alberghi))
-;  (query
-;    (durata ?giorni)
-;    )
-;=>
-;  (bind ?pernottamenti (create$))
-;  (bind ?minimo (find-fact ((?alb albergo)) (eq ?alb:id (nth$ 1 ?alberghi))))
-;
-;  (foreach ?id-albergo ?alberghi
-;    (bind ?albergo (find-fact ((?alb albergo)) (eq ?alb:id ?id-albergo)))
-;
-;   (if (< (fact-slot-value ?albergo stelle) (fact-slot-value ?minimo stelle))
-;     then
-;     (bind ?minimo ?albergo)
-;    )
-;  )
-
-;  (bind ?giorni-divisi-equamente (div (length ?alberghi) ?giorni))
-;  (bind ?giorni-rimanenti (mod (length ?alberghi) ?giorni))
-;
-;  (foreach ?id-albergo ?alberghi
-;    (bind ?albergo (find-fact ((?alb albergo)) (eq ?alb:id ?id-albergo))
-;    (bind ?giorni-pernottamento
-;      (if (eq ?albergo ?minimo)
-;        then
-;        (+ ?giorni-rimanenti ?giorni-divisi-equamente)
-;        else
-;        ?giorni-divisi-equamente)
-;    (bind ?pernottamenti (create$ ?pernottamenti ?giorni-pernottamento))
-;    )))
-;
-;    (assert
-;      (pernottamenti-per-itinerario
-;        (id-itinerario ?id-itinerario)
-;        (pernottamenti ?pernottamenti)))
-;)
 
 (defrule stampa-pernottamenti
   (pernottamenti-per-itinerario
@@ -397,12 +378,50 @@
     (if (<= ?costo-totale ?budget) then 1
      else (limita -1 1 (- (/ (/ ?costo-totale ?budget) 2) 1))))
 
-  (assert 
-    (attribute 
+  (assert
+    (attribute
       (name alberghi-preferiti-per-budget)
       (value ?id)
       (certainty ?certainty)))
 )
+
+(defrule alberghi-preferiti
+  (attribute
+    (name alberghi-preferiti-per-budget)
+    (value ?id)
+    (certainty ?certainty-budget))
+  (attribute
+    (name alberghi-preferiti-per-occupazione)
+    (value ?id)
+    (certainty ?certainty-occupazione))
+=>
+  (assert
+    (attribute
+      (name alberghi-preferiti)
+      (value ?id)
+      (certainty (min ?certainty-budget ?certainty-occupazione)))))
+
+(defrule scegli-lista-alberghi-per-cf-maggiore
+  (itinerario (id ?id-itinerario))
+=>
+  (bind ?max-certainty -1)
+  (bind ?lista-alberghi-migliore nil)
+
+  (do-for-all-facts
+    (
+    (?alb-per-it alberghi-per-itinerario)
+    (?att attribute))
+    (and
+      (eq ?alb-per-it:id-itinerario ?id-itinerario)
+      (eq ?att:name alberghi-preferiti)
+      (eq ?att:value ?alb-per-it:id)
+      (> ?att:certainty ?max-certainty)
+    )
+    (bind ?max-certainty ?att:certainty)
+    (bind ?lista-alberghi-migliore ?att:value)
+  )
+)
+
 
 (defrule stampa-liste-alberghi
   (declare (salience -20))
@@ -417,7 +436,6 @@
   )
 
 (defmodule REGOLE (export ?ALL) (import MAIN ?ALL) (import DOMINIO ?ALL)  (import DOMINIO-ITINERARI ?ALL))
-
 
 (defglobal ?*MAX-DISTANZA* = 10)
 
@@ -520,13 +538,13 @@
 
 (defmodule PRINT-RESULTS (import MAIN ?ALL))
 
-(defrule stampa-attributi
-  ?rem <-
-    (attribute
-      (name ?name)
-      (value ?value)
-      (certainty ?certainty))
-   (test (member$ ?name (create$ alberghi-preferiti-per-budget )))
-  =>
-  ;(retract ?rem)
-  (format t " %-40s %-30s %2f%n" ?name ?value ?certainty))
+; (defrule stampa-attributi
+;   ?rem <-
+;     (attribute
+;       (name ?name)
+;       (value ?value)
+;       (certainty ?certainty))
+;    (test (member$ ?name (create$ pernottamenti-per-itinerario )))
+;   =>
+;   ;(retract ?rem)
+;   (format t " %-40s %-30s %2f%n" ?name ?value ?certainty))
