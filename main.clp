@@ -194,49 +194,62 @@
 (deffunction distanza-coordinate (?x1 ?y1 ?x2 ?y2)
     (sqrt (+ (** (- ?x1 ?x2) 2) (** (- ?y1 ?y2) 2))))
 
-(defrule inizia-itinerario
-  (località (nome ?nome-località))
-=>
-  (assert (itinerario (id ?nome-località) (località ?nome-località)))
-)
-
 (deffunction sort-cmp-string
   (?a ?b)
   (> (str-compare ?a ?b) 0))
 
-(defrule continua-itinerario
-  (query (numero-città ?numero-città))
-  (itinerario
-    (id ?id)
-    (località $?località-itinerario ?ultima-località))
-  (località (nome ?ultima-località) (lat ?lat1) (lon ?lon1))
-  (località (nome ?nuova-località) (lat ?lat2) (lon ?lon2))
-  (test (< (+ 1 (length$ $?località-itinerario)) ?numero-città))
-  (test (neq ?ultima-località ?nuova-località))
-  (test (not (member$ ?nuova-località ?località-itinerario)))
-  (test (< (distanza-coordinate ?lat1 ?lon1 ?lat2 ?lon2) 100))
-=>
-  (bind ?nuove-località (create$ ?località-itinerario ?ultima-località ?nuova-località))
-  (assert (itinerario
-    (id (implode$ (sort sort-cmp-string ?nuove-località)))
-    (località ?nuove-località)))
+(defglobal ?*SOGLIA-LOCALITÀ-VICINA* = 100)
+
+(deffunction last
+  (?multifield)
+  (nth$ (length$ ?multifield) ?multifield))
+
+(deffunction asserisci-itinerari
+  (?lista-località-itinerario ?lunghezza-itinerario)
+  (if (< (length$ ?lista-località-itinerario) ?lunghezza-itinerario)
+    then
+    (do-for-all-facts
+      ((?località-partenza località) (?località-destinazione località))
+      (and
+        (eq ?località-partenza:nome (last ?lista-località-itinerario))
+        (<
+          (distanza-coordinate
+            ?località-partenza:lat
+            ?località-partenza:lon
+            ?località-destinazione:lat
+            ?località-destinazione:lon)
+          ?*SOGLIA-LOCALITÀ-VICINA*)
+        (not (member$ ?località-destinazione:nome ?lista-località-itinerario))
+      )
+      (asserisci-itinerari
+        (create$ ?lista-località-itinerario ?località-destinazione:nome)
+        ?lunghezza-itinerario
+      )
+    )
+    else
+    (assert
+      (itinerario
+        (id (implode$ (sort sort-cmp-string ?lista-località-itinerario)))
+        (località ?lista-località-itinerario)
+      )
+    )
+  )
 )
 
-(defrule pulisci-itinerari-duplicati
-  (declare (salience -10))
-  ?it1 <- (itinerario (id ?id))
-  ?it2 <- (itinerario (id ?id))
-  (test (neq ?it1 ?it2))
-=>
-  (retract ?it1))
-
-(defrule pulisci-itinerari-incompleti
-  (declare (salience -10))
+(defrule crea-itinerari-da-località
   (query (numero-città ?numero-città))
-  ?it <- (itinerario (località $?località))
-  (test (< (length$ ?località) ?numero-città))
-=>
-  (retract ?it))
+  =>
+  (do-for-all-facts ((?località località)) TRUE
+    (asserisci-itinerari (create$ ?località:nome) ?numero-città)
+  )
+  ; elimina gli itinerari che contengono le stesse città
+  (do-for-all-facts ((?it1 itinerario) (?it2 itinerario))
+    (and
+      (eq ?it1:id ?it2:id)
+      (neq ?it1 ?it2))
+    (retract ?it2)
+  )
+)
 
 (defmodule DOMINIO-ALBERGHI-PER-ITINERARIO (export ?ALL) (import MAIN ?ALL) (import DOMINIO ?ALL))
 
