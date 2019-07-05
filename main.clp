@@ -324,13 +324,11 @@
   (bind ?min-occupazione 1)
   (bind ?indice-min-albergo 0)
 
-  (loop-for-count (?i (length$ ?id-alberghi)) do
-    (bind ?id-albergo (nth$ ?i ?id-alberghi))
+  (foreach ?id-albergo ?id-alberghi do
     (do-for-fact ((?albergo albergo)) (eq ?albergo:id ?id-albergo)
-      (bind ?occupazione (fact-slot-value ?albergo occupazione))
-      (if (< ?occupazione ?min-occupazione) then
-        (bind ?min-occupazione ?occupazione)
-        (bind ?indice-min-albergo ?i))
+      (if (< ?albergo:occupazione ?min-occupazione) then
+        (bind ?min-occupazione ?albergo:occupazione)
+        (bind ?indice-min-albergo ?id-albergo-index))
     )
   )
 
@@ -339,17 +337,13 @@
   (bind ?giorni-divisi-equamente (div ?giorni (length ?id-alberghi)))
   (bind ?giorni-rimanenti (mod ?giorni (length ?id-alberghi)))
 
-  (loop-for-count (?i 1 (length$ ?id-alberghi))  do
+  (foreach ?x ?id-alberghi do
     (bind ?pernottamenti (create$ ?pernottamenti ?giorni-divisi-equamente))
   )
-
-  ;(printout t (implode$ ?id-alberghi) ": min-albergo: " ?indice-min-albergo ", min-stelle: " ?min-stelle crlf)
 
   (bind ?pernottamenti
     (replace$ ?pernottamenti ?indice-min-albergo ?indice-min-albergo
       (+ ?giorni-divisi-equamente ?giorni-rimanenti)))
-
-  ;(printout t (implode$ ?pernottamenti) crlf)
 
   (assert
     (pernottamenti-per-itinerario
