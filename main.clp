@@ -333,16 +333,10 @@
 
   (foreach ?albergo ?lista-alberghi
 
-    ; (bind ?albergo-della-lista
-    ;   (find-all-facts ((?alb albergo))
-    ;     (eq ?alb:lista-alberghi ?lista-alberghi)
-    ;   )
-    ; )
     (do-for-fact ((?alb albergo)) (eq ?alb:id ?albergo)
-
-      (if (> ?camere-necessarie (fact-slot-value ?alb camere-libere)) then
+      (if (> ?camere-necessarie ?alb:camere-libere) then
         (do-for-fact ((?lista alberghi-per-itinerario)) (eq ?lista:id ?id)
-            (retract ?lista)
+          (retract ?lista)
         )
       )
     )
@@ -533,11 +527,16 @@
 
 (defrule località-preferita-per-turismo
     (query (turismo $? ?tipo-turismo $?))
-    (località-tipo-turismo (nome-località ?nome) (tipo ?tipo-turismo) (punteggio ?punteggio))
+    (località-tipo-turismo
+      (nome-località ?nome)
+      (tipo ?tipo-turismo)
+      (punteggio ?punteggio))
 =>
-    (assert (attribute (name località-preferita-per-turismo)
-                       (value ?nome)
-                       (certainty (punteggio-località-to-cf ?punteggio)))))
+    (assert
+      (attribute
+        (name località-preferita-per-turismo)
+        (value ?nome)
+        (certainty (punteggio-località-to-cf ?punteggio)))))
 
 
 (defmodule REASONING (export ?ALL) (import MAIN ?ALL) (import DOMINIO ?ALL)  (import DOMINIO-ITINERARI ?ALL) (import REGOLE ?ALL))
@@ -581,12 +580,14 @@
     (and
       (eq ?att:name località-preferita)
       (member$ ?att:value ?lista-località))
-  (assert
-    (attribute
-      (name itinerario-preferito-per-località)
-      (value ?id)
-      (certainty (fact-slot-value ?att certainty)))
-  )))
+    (assert
+      (attribute
+        (name itinerario-preferito-per-località)
+        (value ?id)
+        (certainty ?att:certainty))
+    )
+  )
+)
 
 (defrule itinerario-preferito-per-alberghi
   (itinerario (id ?id-itinerario))
