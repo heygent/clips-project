@@ -22,14 +22,6 @@
   (set-fact-duplication TRUE)
   (focus DOMINIO DOMINIO-ITINERARI DOMINIO-ALBERGHI-PER-ITINERARIO REGOLE REASONING PRINT-RESULTS))
 
-(deffunction combined-certainty
-  (?cert1 ?cert2)
-  (if (and (>= ?cert1 0) (>= ?cert2 0)) then
-    (return (- (+ ?cert1 ?cert2) (* ?cert1 ?cert2))))
-  (if (and (<= ?cert1 0) (<= ?cert2 0)) then
-    (return (+ (+ ?cert1 ?cert2) (* ?cert1 ?cert2))))
-  (/ (+ ?cert1 ?cert2) (- 1 (min (abs ?cert1) (abs ?cert2)))))
-
 (deffunction da-stelle-a-prezzo
   (?stelle)
   (+ 25 (* ?stelle 25))
@@ -39,6 +31,14 @@
   "Confina il valore di ?num tra ?min e ?max."
   (min ?max (max ?min ?num)))
 
+(deffunction combined-certainty
+  (?cert1 ?cert2)
+  (if (and (>= ?cert1 0) (>= ?cert2 0)) then
+    (return (- (+ ?cert1 ?cert2) (* ?cert1 ?cert2))))
+  (if (and (<= ?cert1 0) (<= ?cert2 0)) then
+    (return (+ (+ ?cert1 ?cert2) (* ?cert1 ?cert2))))
+  (/ (+ ?cert1 ?cert2) (- 1 (min (abs ?cert1) (abs ?cert2)))))
+
 (defrule combine-certainties
   (declare (salience 100)
            (auto-focus TRUE))
@@ -46,6 +46,15 @@
   ?rem2 <- (attribute (name ?rel) (value ?val) (certainty ?cert2))
   (test (neq ?rem1 ?rem2))
   =>
+  (if ?*DEBUG* then
+    (printout t "defrule combine-certainties" crlf)
+    (printout t "name: " ?rel crlf)
+    (printout t "value: " ?val crlf)
+    (printout t "certainty 1: " ?cert1 crlf)
+    (printout t "certainty 2: " ?cert2 crlf)
+    (printout t "combined: " (combined-certainty ?cert1 ?cert2) crlf)
+    (printout t crlf)
+  )
   (retract ?rem1)
   (modify ?rem2 (certainty (combined-certainty ?cert1 ?cert2))))
 
@@ -253,28 +262,41 @@
 
 (defmodule DOMINIO-ALBERGHI-PER-ITINERARIO (export ?ALL) (import MAIN ?ALL) (import DOMINIO ?ALL))
 
+(deffunction crea-lista-alberghi
+  (?id-itinerario ?lista-località ?lista-alberghi)
+  (if (eq (length$ ?lista-località) (length$ ?lista-alberghi))
+    then
+    (if ?*DEBUG* then
+      (printout t "deffunction crea-lista-alberghi" crlf)
+      (printout t "Itinerario: " ?id-itinerario crlf)
+      (printout t "Lista alberghi: " (implode$ ?lista-alberghi) crlf crlf)
+    )
+    (assert
+      (alberghi-per-itinerario
+        (id (implode$ ?lista-alberghi))
+        (id-itinerario ?id-itinerario)
+        (alberghi ?lista-alberghi)))
+    else
+    (bind ?nome-località-successiva
+      (nth$
+        (+ 1 (length$ ?lista-alberghi))
+        ?lista-località
+      )
+    )
+    (do-for-all-facts ((?albergo albergo))
+      (eq ?albergo:località ?nome-località-successiva)
+      (crea-lista-alberghi
+        ?id-itinerario
+        ?lista-località
+        (create$ ?lista-alberghi ?albergo:id))
+    )
+  )
+)
+
 (defrule crea-liste-alberghi
   (itinerario (id ?id-itinerario) (località $?lista-località))
 =>
-  (assert
-    (alberghi-per-itinerario
-      (id-itinerario ?id-itinerario)
-      (alberghi)))
-  (foreach ?località ?lista-località
-    (bind ?tutti-alb-per-it
-      (find-all-facts ((?alb-per-it alberghi-per-itinerario))
-        (eq ?alb-per-it:id-itinerario ?id-itinerario)
-      ))
-    (do-for-all-facts ((?albergo albergo))
-      (eq ?albergo:località ?località)
-      (foreach ?alb-per-it ?tutti-alb-per-it
-        (bind ?alberghi-più-nuovo (create$ (fact-slot-value ?alb-per-it alberghi) (fact-slot-value ?albergo id)))
-        (duplicate ?alb-per-it
-          (id (implode$ ?alberghi-più-nuovo))
-          (alberghi ?alberghi-più-nuovo)))
-    )
-    (foreach ?alb-per-it ?tutti-alb-per-it
-        (retract ?alb-per-it)))
+  (crea-lista-alberghi ?id-itinerario ?lista-località (create$))
 )
 
 (defrule cf-alberghi-per-occupazione
