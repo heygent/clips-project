@@ -1,20 +1,35 @@
 (defmodule MAIN (export ?ALL))
 
-(defglobal ?*DEBUG* = TRUE)
+(defglobal
+  ; Mostra o nasconde alcune stampe
+  ?*DEBUG* = TRUE
+  ; Se la distanza di due località A e B è inferiore a questo numero, allora A
+  ; può essere inclusa come tappa successiva di B in un itinerario e viceversa.
+  ?*SOGLIA-LOCALITÀ-VICINA* = 100
+  ; Se la località A è distante ?*SOGLIA-DISTANZA-REGIONE* o più dalla regione
+  ; R, il suo punteggio sarà tendente a 1 o -1 (a seconda se R sia da escludere
+  ; o includere). Se è meno distante, allora il suo punteggio sarà tra 0 e 1
+  ; (oppure -1).
+  ?*SOGLIA-DISTANZA-REGIONE* = 10
+  ; Se il costo di un'itinerario supera di questo numero il budget dell'utente,
+  ; il CF relativo all'itinerario in base al budget sarà 0. Se lo supera del
+  ; doppio, il CF sarà -1 (anche i valori intermedi sono rappresentati nel CF).
+  ?*SOGLIA-MAX-SUPERAMENTO-PREZZO* = 50
+)
 
 (deftemplate query
-    (slot durata (default 5))
-    (slot numero-persone)
-    (slot numero-città (default 4))
-    (multislot regioni-da-includere)
-    (multislot regioni-da-escludere)
-    (multislot turismo)
-    (slot budget))
+  (slot durata (default 5))
+  (slot numero-persone)
+  (slot numero-città (default 4))
+  (multislot regioni-da-includere)
+  (multislot regioni-da-escludere)
+  (multislot turismo)
+  (slot budget))
 
 (deftemplate attribute
-    (slot name)
-    (slot value)
-    (slot certainty))
+  (slot name)
+  (slot value)
+  (slot certainty))
 
 (defrule start
   (declare (salience 10000))
@@ -22,16 +37,9 @@
   (set-fact-duplication TRUE)
   (focus DOMINIO DOMINIO-ITINERARI DOMINIO-ALBERGHI-PER-ITINERARIO REGOLE REASONING PRINT-RESULTS))
 
-(deffunction da-stelle-a-prezzo
-  (?stelle)
-  (+ 25 (* ?stelle 25))
-  )
-
-(deffunction limita (?min ?max ?num)
-  "Confina il valore di ?num tra ?min e ?max."
-  (min ?max (max ?min ?num)))
-
 (deffunction combined-certainty
+  "Date due certezze, restutuisce un unico fattore di certezza che rappresenta
+  la loro combinazione."
   (?cert1 ?cert2)
   (if (and (>= ?cert1 0) (>= ?cert2 0)) then
     (return (- (+ ?cert1 ?cert2) (* ?cert1 ?cert2))))
@@ -40,6 +48,8 @@
   (/ (+ ?cert1 ?cert2) (- 1 (min (abs ?cert1) (abs ?cert2)))))
 
 (defrule combine-certainties
+  "Se esiste una coppia di attribute con lo stesso name e value, combina le
+  loro certezze"
   (declare (salience 100)
            (auto-focus TRUE))
   ?rem1 <- (attribute (name ?rel) (value ?val) (certainty ?cert1))
@@ -58,6 +68,32 @@
   (retract ?rem1)
   (modify ?rem2 (certainty (combined-certainty ?cert1 ?cert2))))
 
+; Funzioni di utilità
+
+(deffunction da-stelle-a-prezzo
+  "Dato il numero di stelle di un albergo, restituisce il prezzo corrispondente"
+  (?stelle)
+  (+ 25 (* ?stelle 25)))
+
+(deffunction limita (?min ?max ?num)
+  "Confina il valore di ?num tra ?min e ?max."
+  (min ?max (max ?min ?num)))
+
+(deffunction distanza-coordinate (?x1 ?y1 ?x2 ?y2)
+  "Restituisce la distanza tra due coppie di coordinate."
+  (sqrt (+ (** (- ?x1 ?x2) 2) (** (- ?y1 ?y2) 2))))
+
+(deffunction sort-cmp-string
+  "Restituisce TRUE se ?a viene lessicograficamente prima di ?b. Scritta per
+  essere usata con la funzione sort di clips."
+  (?a ?b)
+  (> (str-compare ?a ?b) 0))
+
+(deffunction last
+  "Dato un multifield, restituisce il suo ultimo valore."
+  (?multifield)
+  (nth$ (length$ ?multifield) ?multifield))
+
 (defmodule DOMINIO (export ?ALL)(import MAIN ?ALL))
 
 (deftemplate località "località turistica"
@@ -75,9 +111,6 @@
     (slot nome-località)
     (slot tipo)
     (slot punteggio))
-
-(deffunction punteggio-località-to-cf (?punteggio)
-    (- (/ (* ?punteggio 2) 5) 1))
 
 (deftemplate albergo
     (slot id)
@@ -200,19 +233,6 @@
 
 (defmodule DOMINIO-ITINERARI (export ?ALL) (import MAIN ?ALL) (import DOMINIO ?ALL))
 
-(deffunction distanza-coordinate (?x1 ?y1 ?x2 ?y2)
-    (sqrt (+ (** (- ?x1 ?x2) 2) (** (- ?y1 ?y2) 2))))
-
-(deffunction sort-cmp-string
-  (?a ?b)
-  (> (str-compare ?a ?b) 0))
-
-(defglobal ?*SOGLIA-LOCALITÀ-VICINA* = 100)
-
-(deffunction last
-  (?multifield)
-  (nth$ (length$ ?multifield) ?multifield))
-
 (deffunction asserisci-itinerari
   (?lista-località-itinerario ?lunghezza-itinerario)
   (if (< (length$ ?lista-località-itinerario) ?lunghezza-itinerario)
@@ -302,7 +322,7 @@
 (defrule cf-alberghi-per-occupazione
   (alberghi-per-itinerario (id ?id) (alberghi $?lista-alberghi))
 =>
-  (bind ?occupazione-minore 1.0)
+  (bind ?occupazione-minore 1)
 
   (foreach ?albergo ?lista-alberghi
     (do-for-fact
@@ -323,6 +343,8 @@
 )
 
 (defrule elimina-alberghi-per-disponibilità
+  "Elimina i fatti alberghi-per-itinerario che contengono alberghi che non hanno
+  abbastanza posti liberi per soddisfare i requisiti dell'utente."
   (alberghi-per-itinerario
     (id ?id)
     (alberghi $?lista-alberghi)
@@ -395,8 +417,6 @@
 
       ))
 )
-
-(defglobal ?*SOGLIA-MAX-SUPERAMENTO-PREZZO* = 50)
 
 (defrule alberghi-preferiti-per-budget
   (query (budget ?budget) (numero-persone ?persone))
@@ -474,16 +494,19 @@
     (bind ?max-certainty ?att:certainty)
     (bind ?lista-alberghi-migliore ?alb-per-it)
   )
-  (if (neq ?lista-alberghi-migliore nil)
+
+  (if (eq ?lista-alberghi-migliore nil)
+    ; Se non c'è una lista di alberghi corrispondente all'itinerario, elimino
+    ; l'itinerario
     then
+    (retract ?itinerario)
+    else
+    ; Imposta la lista di alberghi come definitiva.
     (modify ?lista-alberghi-migliore (definitivo TRUE))
-    else (retract ?itinerario)
   )
 )
 
 (defmodule REGOLE (export ?ALL) (import MAIN ?ALL) (import DOMINIO ?ALL)  (import DOMINIO-ITINERARI ?ALL))
-
-(defglobal ?*MAX-DISTANZA* = 10)
 
 (deffunction punteggio-distanza-da-area
   "
@@ -492,13 +515,13 @@
   0 significa che la località si trova all'interno della regione, 1 che ne è al
   di fuori. I valori intermedi rappresentano quanto è lontana la località dalla
   regione, dove un valore che tende a 1 indica una distanza tendente a
-  ?*MAX-DISTANZA*.
+  ?*SOGLIA-DISTANZA-REGIONE*.
   "
   (?x-località ?y-località ?x-regione ?y-regione ?raggio)
   (bind ?distanza-da-centro-regione
     (distanza-coordinate ?x-località ?y-località ?x-regione ?y-regione))
   (bind ?distanza-da-confine-regione (- ?distanza-da-centro-regione ?raggio))
-  (limita 0 1 (/ ?distanza-da-confine-regione ?*MAX-DISTANZA*))
+  (limita 0 1 (/ ?distanza-da-confine-regione ?*SOGLIA-DISTANZA-REGIONE*))
 )
 
 (defrule località-preferita-per-regioni-incluse
@@ -525,6 +548,14 @@
                        (value ?nome)
                        (certainty (- ?punteggio 1)))))
 
+(deffunction da-punteggio-turismo-località-a-cf
+  (?punteggio)
+  "Dato un punteggio da 1 a 5 per il turismo di una località, restituisce un
+  valore di certezza corrispondente a quel turismo. Si considera un punteggio
+  3 come neutro (che quindi restituirà come CF 0), un punteggio al di sopra di 3
+  positivo e un punteggio al di sotto negativo."
+  (- (/ (* ?punteggio 2) 5) 1))
+
 (defrule località-preferita-per-turismo
     (query (turismo $? ?tipo-turismo $?))
     (località-tipo-turismo
@@ -536,7 +567,7 @@
       (attribute
         (name località-preferita-per-turismo)
         (value ?nome)
-        (certainty (punteggio-località-to-cf ?punteggio)))))
+        (certainty (da-punteggio-turismo-località-a-cf ?punteggio)))))
 
 
 (defmodule REASONING (export ?ALL) (import MAIN ?ALL) (import DOMINIO ?ALL)  (import DOMINIO-ITINERARI ?ALL) (import REGOLE ?ALL))
