@@ -27,7 +27,7 @@
 )
 
 (deftemplate query
-  (slot durata (type INTEGER) (range 0 ?VARIABLE) (default 5))
+  (slot giorni (type INTEGER) (range 0 ?VARIABLE) (default 5))
   (slot numero-persone (range 0 ?VARIABLE) (type INTEGER) (default 2))
   (slot numero-città (range 0 ?VARIABLE) (type INTEGER) (default 3))
   (multislot regioni-da-includere (type SYMBOL))
@@ -68,7 +68,7 @@ Esempio:
 
 (assert
   (query
-    (durata 5)
+    (giorni 5)
     (numero-persone 2)
     (numero-città 3)
     (regioni-da-includere Piemonte Puglia)
@@ -365,7 +365,7 @@ Esempio:
     (alberghi $?id-alberghi)
     (pernottamenti $?p&:(= (length ?p) 0))
   )
-  (query (durata ?giorni))
+  (query (giorni ?giorni))
   =>
   (bind ?min-occupazione 1)
   (bind ?indice-min-albergo 0)
