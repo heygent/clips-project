@@ -313,13 +313,13 @@
 
 (defrule crea-liste-alberghi
   (itinerario (id ?id-itinerario) (località $?lista-località))
-=>
+  =>
   (crea-lista-alberghi ?id-itinerario ?lista-località (create$))
 )
 
 (defrule cf-alberghi-per-occupazione
   (alberghi-per-itinerario (id ?id) (alberghi $?lista-alberghi))
-=>
+  =>
   (bind ?occupazione-minore 1)
 
   (foreach ?albergo ?lista-alberghi
@@ -348,7 +348,7 @@
     (alberghi $?lista-alberghi)
   )
   (query (numero-persone ?persone))
-=>
+  =>
   (bind ?camere-necessarie (+ (div ?persone 2) (mod ?persone 2)))
 
   (foreach ?albergo ?lista-alberghi
@@ -369,7 +369,7 @@
     (id-itinerario ?id-itinerario)
     (alberghi $?id-alberghi))
   (query (durata ?giorni))
-=>
+  =>
   (bind ?min-occupazione 1)
   (bind ?indice-min-albergo 0)
 
@@ -399,21 +399,6 @@
       (id-itinerario ?id-itinerario)
       (id-alberghi-per-itinerario ?id)
       (pernottamenti ?pernottamenti)))
-)
-
-(defrule stampa-pernottamenti
-  (pernottamenti-per-itinerario
-    (id-alberghi-per-itinerario ?id-alb-per-it) (pernottamenti $?pernottamenti))
-  (alberghi-per-itinerario
-    (id ?id-alb-per-it) (alberghi $?alberghi))
-=>
-  (assert
-    (attribute
-      (name pernottamenti-per-itinerario)
-      (value (str-cat (implode$ ?alberghi) " -> " (implode$ ?pernottamenti)))
-      (certainty 1)
-    )
-  )
 )
 
 (defrule alberghi-preferiti-per-budget
@@ -468,7 +453,7 @@
     (name alberghi-preferiti-per-occupazione)
     (value ?id)
     (certainty ?certainty-occupazione))
-=>
+  =>
   (assert
     (attribute
       (name alberghi-preferiti)
@@ -477,7 +462,7 @@
 
 (defrule scegli-lista-alberghi-per-cf-maggiore
   ?itinerario <- (itinerario (id ?id-itinerario))
-=>
+  =>
   (bind ?max-certainty -2)
   (bind ?lista-alberghi-migliore nil)
 
@@ -523,28 +508,28 @@
 )
 
 (defrule località-preferita-per-regioni-incluse
-    (query (regioni-da-includere $? ?regione $?))
-    (località (nome ?nome) (lat ?lat-località) (lon ?lon-località))
-    (regione (nome ?regione) (lat ?lat-regione) (lon ?lon-regione) (raggio ?raggio))
-=>
-    (bind ?punteggio
-      (punteggio-distanza-da-area
-        ?lat-località ?lon-località ?lat-regione ?lon-regione ?raggio))
-    (assert (attribute (name località-preferita-per-regione)
-                       (value ?nome)
-                       (certainty (- 1 ?punteggio)))))
+  (query (regioni-da-includere $? ?regione $?))
+  (località (nome ?nome) (lat ?lat-località) (lon ?lon-località))
+  (regione (nome ?regione) (lat ?lat-regione) (lon ?lon-regione) (raggio ?raggio))
+  =>
+  (bind ?punteggio
+    (punteggio-distanza-da-area
+      ?lat-località ?lon-località ?lat-regione ?lon-regione ?raggio))
+  (assert (attribute (name località-preferita-per-regione)
+                     (value ?nome)
+                     (certainty (- 1 ?punteggio)))))
 
 (defrule località-preferita-per-regioni-escluse
-    (query (regioni-da-escludere $? ?regione $?))
-    (località (nome ?nome) (lat ?lat-località) (lon ?lon-località))
-    (regione (nome ?regione) (lat ?lat-regione) (lon ?lon-regione) (raggio ?raggio))
-=>
-    (bind ?punteggio
-      (punteggio-distanza-da-area
-        ?lat-località ?lon-località ?lat-regione ?lon-regione ?raggio))
-    (assert (attribute (name località-preferita-per-regione)
-                       (value ?nome)
-                       (certainty (- ?punteggio 1)))))
+  (query (regioni-da-escludere $? ?regione $?))
+  (località (nome ?nome) (lat ?lat-località) (lon ?lon-località))
+  (regione (nome ?regione) (lat ?lat-regione) (lon ?lon-regione) (raggio ?raggio))
+  =>
+  (bind ?punteggio
+    (punteggio-distanza-da-area
+      ?lat-località ?lon-località ?lat-regione ?lon-regione ?raggio))
+  (assert (attribute (name località-preferita-per-regione)
+                     (value ?nome)
+                     (certainty (- ?punteggio 1)))))
 
 (deffunction da-punteggio-turismo-località-a-cf
   (?punteggio)
@@ -555,12 +540,12 @@
   (- (/ (* ?punteggio 2) 5) 1))
 
 (defrule località-preferita-per-turismo
-    (query (turismo $? ?tipo-turismo $?))
-    (località-tipo-turismo
-      (nome-località ?nome)
-      (tipo ?tipo-turismo)
-      (punteggio ?punteggio))
-=>
+  (query (turismo $? ?tipo-turismo $?))
+  (località-tipo-turismo
+    (nome-località ?nome)
+    (tipo ?tipo-turismo)
+    (punteggio ?punteggio))
+  =>
     (assert
       (attribute
         (name località-preferita-per-turismo)
@@ -572,7 +557,7 @@
 
 (defrule località-preferita-no-info
   (località (nome ?nome-località))
-=>
+  =>
   (assert
     (attribute
       (name località-preferita-per-regione)
@@ -594,7 +579,7 @@
     (name località-preferita-per-turismo)
     (value ?località)
     (certainty ?certezza-turismo))
-=>
+  =>
   (assert
     (attribute
       (name località-preferita)
@@ -628,7 +613,7 @@
     (name alberghi-preferiti)
     (value ?id-alb-per-it)
     (certainty ?cert))
-=>
+  =>
   (assert
     (attribute
       (name itinerario-preferito-per-alberghi)
@@ -648,7 +633,6 @@
     (value ?id-itinerario)
     (certainty ?cert-per-alberghi))
   =>
-
   (assert
     (attribute
       (name itinerario-preferito)
@@ -665,7 +649,8 @@
       (value ?value)
       (certainty ?certainty))
    ;(test (member$ ?name (create$ alberghi-per-itinerario itinerario-preferito itinerario-preferito-per-località itinerario-preferito-per-alberghi)))
-   (test (member$ ?name (create$ itinerario-preferito)))
+  (test (member$ ?name (create$ itinerario-preferito)))
+  (test (eq ?*DEBUG* TRUE))
   =>
   ;(retract ?rem)
   (format t " %-40s %-30s %2f%n" ?name ?value ?certainty))
