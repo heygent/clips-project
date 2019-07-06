@@ -1,8 +1,17 @@
 (defmodule MAIN (export ?ALL))
 
 (defglobal
-  ; Mostra o nasconde alcune stampe
+  ; Mostra o nasconde i messaggi di debug
   ?*DEBUG* = FALSE
+  ; name degli attribute da stampare
+  ?*DEBUG-ATTRIBUTE-NAMES* = (create$
+     località-preferita-per-regione
+     località-preferita-per-turismo
+     località-preferita
+     itinerario-preferito-per-località
+     itinerario-preferito-per-alberghi
+     itinerario-preferito
+   )
   ; Se la distanza di due località A e B è inferiore a questo numero, allora A
   ; può essere inclusa come tappa successiva di B in un itinerario e viceversa.
   ?*SOGLIA-LOCALITÀ-VICINA* = 100
@@ -19,12 +28,12 @@
 
 (deftemplate query
   (slot durata (default 5))
-  (slot numero-persone)
-  (slot numero-città (default 4))
+  (slot numero-persone (default 2))
+  (slot numero-città (default 2))
   (multislot regioni-da-includere)
   (multislot regioni-da-escludere)
   (multislot turismo)
-  (slot budget))
+  (slot budget (default 10000)))
 
 (deftemplate attribute
   (slot name)
@@ -33,9 +42,43 @@
 
 (defrule start
   (declare (salience 10000))
+  (query)
   =>
   (set-fact-duplication TRUE)
   (focus DOMINIO DOMINIO-ALBERGHI-PER-ITINERARIO REGOLE REASONING PRINT-RESULTS))
+
+(defrule help
+  (not (query))
+  =>
+  (printout t "
+  /$$$$$$$                                 /$$$$$$                  /$$                               /$$    /$$          /$$
+ | $$__  $$                               /$$__  $$                | $$                              | $$   | $$         |__/
+ | $$  \\ $$  /$$$$$$  /$$    /$$ /$$$$$$ | $$  \\ $$ /$$$$$$$   /$$$$$$$  /$$$$$$   /$$$$$$   /$$$$$$ | $$   | $$ /$$$$$$  /$$
+ | $$  | $$ /$$__  $$|  $$  /$$//$$__  $$| $$$$$$$$| $$__  $$ /$$__  $$ |____  $$ /$$__  $$ /$$__  $$|  $$ / $$/|____  $$| $$
+ | $$  | $$| $$  \\ $$ \\  $$/$$/| $$$$$$$$| $$__  $$| $$  \\ $$| $$  | $$  /$$$$$$$| $$  \\__/| $$$$$$$$ \\  $$ $$/  /$$$$$$$| $$
+ | $$  | $$| $$  | $$  \\  $$$/ | $$_____/| $$  | $$| $$  | $$| $$  | $$ /$$__  $$| $$      | $$_____/  \\  $$$/  /$$__  $$| $$
+ | $$$$$$$/|  $$$$$$/   \\  $/  |  $$$$$$$| $$  | $$| $$  | $$|  $$$$$$$|  $$$$$$$| $$      |  $$$$$$$   \\  $/  |  $$$$$$$| $$
+ |_______/  \\______/     \\_/    \\_______/|__/  |__/|__/  |__/ \\_______/ \\_______/|__/       \\_______/    \\_/    \\_______/|__/
+
+Benvenuto a DoveAndareVai©™, il sistema esperto per organizzare i tuoi viaggi.
+Per procedere, asserisci una query ed esegui il comando (run).
+
+Esempio:
+
+(assert
+  (query
+    (durata 5)
+    (numero-persone 2)
+    (numero-città 3)
+    (regioni-da-includere Piemonte Puglia)
+    (regioni-da-escludere Basilicata)
+    (turismo balneare geologico)
+    (budget 10000)))
+
+(run)
+
+")
+)
 
 (deffunction combined-certainty
   "Date due certezze, restutuisce un unico fattore di certezza che rappresenta
@@ -96,32 +139,39 @@
 
 (defmodule DOMINIO (export ?ALL) (import MAIN ?ALL))
 
-(deftemplate località "località turistica"
-    (slot nome)
-    (slot lat)
-    (slot lon))
+(deftemplate località
+  (slot nome)
+  (slot lat)
+  (slot lon)
+)
 
 (deftemplate regione
-    (slot nome)
-    (slot lat)
-    (slot lon)
-    (slot raggio))
+  (slot nome)
+  (slot lat)
+  (slot lon)
+  (slot raggio)
+)
 
 (deftemplate località-tipo-turismo
-    (slot nome-località)
-    (slot tipo)
-    (slot punteggio))
+  (slot nome-località)
+  (slot tipo)
+  (slot punteggio)
+)
 
 (deftemplate albergo
-    (slot id)
-    (slot località)
-    (slot stelle (type INTEGER))
-    (slot camere-libere)
-    (slot occupazione (type FLOAT)))
+  (slot id)
+  (slot località)
+  (slot stelle (type INTEGER))
+  (slot camere-libere)
+  (slot occupazione (type FLOAT))
+)
 
 (deftemplate itinerario
   (slot id)
   (multislot località)
+  (multislot alberghi)
+  (multislot pernottamenti)
+  (slot costo)
 )
 
 (deftemplate alberghi-per-itinerario
@@ -137,15 +187,19 @@
   (multislot pernottamenti)
 )
 
-(deffacts query
-  (query
-    (budget 500)
-    (numero-persone 1)
-    (numero-città 3)
-    (turismo balneare)
-    (regioni-da-includere Piemonte Lombardia Marche Puglia)
-  )
-)
+(deftemplate costo-alberghi-per-itinerario
+  (slot id-alberghi-per-itinerario)
+  (slot costo))
+
+;(deffacts query
+;  (query
+;    (budget 500)
+;    (numero-persone 1)
+;    (numero-città 3)
+;    (turismo balneare)
+;    (regioni-da-includere Piemonte Lombardia Marche Puglia)
+;  )
+;)
 
 (deffacts località-tipo-turismo
     (località-tipo-turismo (nome-località Torino) (tipo balneare) (punteggio 3))
@@ -342,7 +396,8 @@
       (name alberghi-preferiti-per-occupazione)
       (value ?id)
       (certainty (- 1 ?occupazione-minore))
-    ))
+    )
+  )
 )
 
 (defrule pernottamenti
@@ -401,16 +456,25 @@
   ?costo-totale
 )
 
-(defrule alberghi-preferiti-per-budget
-  (query (budget ?budget) (numero-persone ?persone))
+(defrule costo-alberghi-per-itinerario
+  (query (numero-persone ?persone))
   (alberghi-per-itinerario (id ?id) (alberghi $?id-alberghi))
   (pernottamenti-per-itinerario
     (id-alberghi-per-itinerario ?id)
     (pernottamenti $?pernottamenti))
   =>
-  (bind ?costo-totale
-    (costo-totale-itinerario ?id-alberghi ?persone ?pernottamenti))
+  (assert
+    (costo-alberghi-per-itinerario
+      (id-alberghi-per-itinerario ?id)
+      (costo (costo-totale-itinerario ?id-alberghi ?persone ?pernottamenti))))
+  )
 
+(defrule alberghi-preferiti-per-budget
+  (query (budget ?budget))
+  (costo-alberghi-per-itinerario
+    (id-alberghi-per-itinerario ?id)
+    (costo ?costo-totale))
+  =>
   ; 1 - (costo - budget) / soglia
   (bind ?certainty
      (limita -1 1
@@ -576,18 +640,18 @@
 
 
 (defrule itinerario-preferito-per-località
-  (itinerario (id ?id) (località $?lista-località))
+  (itinerario (id ?id) (località $? ?località $?))
+  (attribute
+    (name località-preferita)
+    (value ?località)
+    (certainty ?cert)
+  )
   =>
-  (do-for-all-facts ((?att attribute))
-    (and
-      (eq ?att:name località-preferita)
-      (member$ ?att:value ?lista-località))
-    (assert
-      (attribute
-        (name itinerario-preferito-per-località)
-        (value ?id)
-        (certainty ?att:certainty))
-    )
+  (assert
+    (attribute
+      (name itinerario-preferito-per-località)
+      (value ?id)
+      (certainty ?cert))
   )
 )
 
@@ -643,14 +707,17 @@
       (?itinerario itinerario)
       (?alberghi-per-it alberghi-per-itinerario)
       (?pernottamenti-per-it pernottamenti-per-itinerario)
+      (?costo-alb-per-it costo-alberghi-per-itinerario)
     )
     (and
       (eq ?itinerario:id ?id-itinerario)
-      (eq ?itinerario:id ?alberghi-per-it:id-itinerario)
+      (eq ?alberghi-per-it:id-itinerario ?itinerario:id)
       (eq ?alberghi-per-it:definitivo TRUE)
+      (eq ?costo-alb-per-it:id-alberghi-per-itinerario ?alberghi-per-it:id)
       (eq ?pernottamenti-per-it:id-alberghi-per-itinerario ?alberghi-per-it:id)
     )
 
+    (printout t "Costo totale: " ?costo-alb-per-it:costo crlf)
     (printout t crlf)
     (format t "%-21s%-20s%-10s%-10s%n" "Località" "Albergo" "Stelle" "Notti")
     (printout t "-------------------------------------------------------------" crlf)
@@ -678,20 +745,6 @@
 
 (defrule seleziona-itinerari-migliori
   =>
-  (printout t "
-  /$$$$$$$                                 /$$$$$$                  /$$                               /$$    /$$          /$$
- | $$__  $$                               /$$__  $$                | $$                              | $$   | $$         |__/
- | $$  \\ $$  /$$$$$$  /$$    /$$ /$$$$$$ | $$  \\ $$ /$$$$$$$   /$$$$$$$  /$$$$$$   /$$$$$$   /$$$$$$ | $$   | $$ /$$$$$$  /$$
- | $$  | $$ /$$__  $$|  $$  /$$//$$__  $$| $$$$$$$$| $$__  $$ /$$__  $$ |____  $$ /$$__  $$ /$$__  $$|  $$ / $$/|____  $$| $$
- | $$  | $$| $$  \\ $$ \\  $$/$$/| $$$$$$$$| $$__  $$| $$  \\ $$| $$  | $$  /$$$$$$$| $$  \\__/| $$$$$$$$ \\  $$ $$/  /$$$$$$$| $$
- | $$  | $$| $$  | $$  \\  $$$/ | $$_____/| $$  | $$| $$  | $$| $$  | $$ /$$__  $$| $$      | $$_____/  \\  $$$/  /$$__  $$| $$
- | $$$$$$$/|  $$$$$$/   \\  $/  |  $$$$$$$| $$  | $$| $$  | $$|  $$$$$$$|  $$$$$$$| $$      |  $$$$$$$   \\  $/  |  $$$$$$$| $$
- |_______/  \\______/     \\_/    \\_______/|__/  |__/|__/  |__/ \\_______/ \\_______/|__/       \\_______/    \\_/    \\_______/|__/
-
-Benvenuto a DoveAndareVai©™, il sistema esperto per organizzare i tuoi viaggi.
-Abbiamo alcuni itinerari da suggerirti.
-" crlf)
-
   (bind ?attribute-itinerari
     (find-all-facts ((?att attribute))
       (eq ?att:name itinerario-preferito)
@@ -703,6 +756,15 @@ Abbiamo alcuni itinerari da suggerirti.
     (sort compara-attribute ?attribute-itinerari)
   )
 
+  (printout t crlf)
+
+  (if (> (length$ ?attribute-itinerari) 0)
+    then
+    (printout t "Abbiamo alcuni itinerari da suggerirti." crlf)
+    else
+    (printout t "Spiacente, il sistema non ha trovato risultati." crlf)
+  )
+
   ; Stampa sempre i primi due risultati.
   ; Stampa i tre risultati successivi finché hanno certainty >= 0.
   (foreach ?att-itinerario (subseq$ ?attribute-itinerari 1 5)
@@ -712,19 +774,23 @@ Abbiamo alcuni itinerari da suggerirti.
         (> ?att-itinerario-index 2)
       )
       then (break))
-    (printout t "Itinerario " ?att-itinerario-index crlf)
-    (stampa-itinerario (fact-slot-value ?att-itinerario value)))
+    (printout t "-- Itinerario " ?att-itinerario-index " --" crlf)
+    (stampa-itinerario (fact-slot-value ?att-itinerario value))
+  )
 )
 
 (defrule stampa-attributi
-  ?rem <-
-    (attribute
-      (name ?name)
-      (value ?value)
-      (certainty ?certainty))
-   ;(test (member$ ?name (create$ alberghi-per-itinerario itinerario-preferito itinerario-preferito-per-località itinerario-preferito-per-alberghi)))
-  (test (member$ ?name (create$ itinerario-preferito)))
+  (attribute
+    (name ?name)
+    (value ?value)
+    (certainty ?certainty))
+  (test (member$ ?name ?*DEBUG-ATTRIBUTE-NAMES*))
   (test (eq ?*DEBUG* TRUE))
   =>
-  ;(retract ?rem)
   (format t " %-40s %-30s %2f%n" ?name ?value ?certainty))
+
+(defrule restart
+  (declare (salience -10))
+  =>
+  (reset)
+  (focus MAIN))
