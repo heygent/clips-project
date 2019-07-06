@@ -35,7 +35,7 @@
   (declare (salience 10000))
   =>
   (set-fact-duplication TRUE)
-  (focus DOMINIO DOMINIO-ITINERARI DOMINIO-ALBERGHI-PER-ITINERARIO REGOLE REASONING PRINT-RESULTS))
+  (focus DOMINIO DOMINIO-ALBERGHI-PER-ITINERARIO REGOLE REASONING PRINT-RESULTS))
 
 (deffunction combined-certainty
   "Date due certezze, restutuisce un unico fattore di certezza che rappresenta
@@ -49,7 +49,7 @@
 
 (defrule combine-certainties
   "Se esiste una coppia di attribute con lo stesso name e value, combina le
-  loro certezze"
+  loro certezze."
   (declare (salience 100)
            (auto-focus TRUE))
   ?rem1 <- (attribute (name ?rel) (value ?val) (certainty ?cert1))
@@ -94,7 +94,7 @@
   (?multifield)
   (nth$ (length$ ?multifield) ?multifield))
 
-(defmodule DOMINIO (export ?ALL)(import MAIN ?ALL))
+(defmodule DOMINIO (export ?ALL) (import MAIN ?ALL))
 
 (deftemplate località "località turistica"
     (slot nome)
@@ -139,13 +139,13 @@
 
 (deffacts query
   (query
-   (budget 500)
-   (numero-persone 1)
-   (numero-città 3)
-   (turismo balneare)
-   (regioni-da-includere Piemonte Lombardia Marche Puglia)
-   )
+    (budget 500)
+    (numero-persone 1)
+    (numero-città 3)
+    (turismo balneare)
+    (regioni-da-includere Piemonte Lombardia Marche Puglia)
   )
+)
 
 (deffacts località-tipo-turismo
     (località-tipo-turismo
@@ -230,8 +230,6 @@
         (lon -30)
         (raggio 30))
 )
-
-(defmodule DOMINIO-ITINERARI (export ?ALL) (import MAIN ?ALL) (import DOMINIO ?ALL))
 
 (deffunction asserisci-itinerari
   (?lista-località-itinerario ?lunghezza-itinerario)
@@ -344,7 +342,7 @@
 
 (defrule elimina-alberghi-per-disponibilità
   "Elimina i fatti alberghi-per-itinerario che contengono alberghi che non hanno
-  abbastanza posti liberi per soddisfare i requisiti dell'utente."
+   abbastanza posti liberi per soddisfare i requisiti dell'utente."
   (alberghi-per-itinerario
     (id ?id)
     (alberghi $?lista-alberghi)
@@ -414,8 +412,8 @@
       (name pernottamenti-per-itinerario)
       (value (str-cat (implode$ ?alberghi) " -> " (implode$ ?pernottamenti)))
       (certainty 1)
-
-      ))
+    )
+  )
 )
 
 (defrule alberghi-preferiti-per-budget
@@ -506,7 +504,7 @@
   )
 )
 
-(defmodule REGOLE (export ?ALL) (import MAIN ?ALL) (import DOMINIO ?ALL)  (import DOMINIO-ITINERARI ?ALL))
+(defmodule REGOLE (export ?ALL) (import MAIN ?ALL) (import DOMINIO ?ALL))
 
 (deffunction punteggio-distanza-da-area
   "
@@ -570,7 +568,7 @@
         (certainty (da-punteggio-turismo-località-a-cf ?punteggio)))))
 
 
-(defmodule REASONING (export ?ALL) (import MAIN ?ALL) (import DOMINIO ?ALL)  (import DOMINIO-ITINERARI ?ALL) (import REGOLE ?ALL))
+(defmodule REASONING (export ?ALL) (import MAIN ?ALL) (import DOMINIO ?ALL) (import REGOLE ?ALL))
 
 (defrule località-preferita-no-info
   (località (nome ?nome-località))
