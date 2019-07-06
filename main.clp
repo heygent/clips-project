@@ -27,13 +27,14 @@
 )
 
 (deftemplate query
-  (slot durata (default 5))
-  (slot numero-persone (default 2))
-  (slot numero-città (default 2))
-  (multislot regioni-da-includere)
-  (multislot regioni-da-escludere)
-  (multislot turismo)
-  (slot budget (default 10000)))
+  (slot durata (type INTEGER) (range 0 ?VARIABLE) (default 5))
+  (slot numero-persone (range 0 ?VARIABLE) (type INTEGER) (default 2))
+  (slot numero-città (range 0 ?VARIABLE) (type INTEGER) (default 3))
+  (multislot regioni-da-includere (type SYMBOL))
+  (multislot regioni-da-escludere (type SYMBOL))
+  (multislot turismo (type SYMBOL))
+  (slot budget (type INTEGER) (range 0 ?VARIABLE) (default 10000))
+)
 
 (deftemplate attribute
   (slot name)
@@ -45,7 +46,7 @@
   (query)
   =>
   (set-fact-duplication TRUE)
-  (focus DOMINIO DOMINIO-ALBERGHI-PER-ITINERARIO REGOLE REASONING PRINT-RESULTS))
+  (focus DOMINIO DOMINIO-ALBERGHI-PER-ITINERARIO REGOLE-ALBERGHI REGOLE REASONING PRINT-RESULTS))
 
 (defrule help
   (not (query))
@@ -71,7 +72,7 @@ Esempio:
     (numero-persone 2)
     (numero-città 3)
     (regioni-da-includere Piemonte Puglia)
-    (regioni-da-escludere Basilicata)
+    (regioni-da-escludere Marche)
     (turismo balneare geologico)
     (budget 10000)))
 
@@ -161,9 +162,9 @@ Esempio:
 (deftemplate albergo
   (slot id)
   (slot località)
-  (slot stelle (type INTEGER))
+  (slot stelle)
   (slot camere-libere)
-  (slot occupazione (type FLOAT))
+  (slot occupazione)
 )
 
 (deftemplate itinerario
@@ -173,33 +174,6 @@ Esempio:
   (multislot pernottamenti)
   (slot costo)
 )
-
-(deftemplate alberghi-per-itinerario
-  (slot id)
-  (slot id-itinerario)
-  (multislot alberghi)
-  (slot definitivo (default FALSE))
-)
-
-(deftemplate pernottamenti-per-itinerario
-  (slot id-itinerario)
-  (slot id-alberghi-per-itinerario)
-  (multislot pernottamenti)
-)
-
-(deftemplate costo-alberghi-per-itinerario
-  (slot id-alberghi-per-itinerario)
-  (slot costo))
-
-;(deffacts query
-;  (query
-;    (budget 500)
-;    (numero-persone 1)
-;    (numero-città 3)
-;    (turismo balneare)
-;    (regioni-da-includere Piemonte Lombardia Marche Puglia)
-;  )
-;)
 
 (deffacts località-tipo-turismo
     (località-tipo-turismo (nome-località Torino) (tipo balneare) (punteggio 3))
@@ -240,17 +214,17 @@ Esempio:
     (albergo (id Milano2) (località Milano) (stelle 2) (camere-libere 5) (occupazione 0.5))
     (albergo (id MonculoPiemontese1) (località MonculoPiemontese) (stelle 4) (camere-libere 5) (occupazione 0.5))
     (albergo (id MonculoPiemontese2) (località MonculoPiemontese) (stelle 2) (camere-libere 5) (occupazione 0.7))
-    (albergo (id Macerata1) (località Macerata) (stelle 4) (camere-libere 1) (occupazione 0.7))
+    (albergo (id Macerata1) (località Macerata) (stelle 4) (camere-libere 3) (occupazione 0.7))
     (albergo (id Macerata2) (località Macerata) (stelle 2) (camere-libere 1) (occupazione 0.3))
     (albergo (id Camerino1) (località Camerino) (stelle 4) (camere-libere 1) (occupazione 0.5))
     (albergo (id Camerino2) (località Camerino) (stelle 2) (camere-libere 1) (occupazione 0.7))
     (albergo (id acquasparta1) (località acquasparta) (stelle 4) (camere-libere 1) (occupazione 0.7))
     (albergo (id acquasparta2) (località acquasparta) (stelle 2) (camere-libere 1) (occupazione 0.3))
     (albergo (id ColonettaDiProdo1) (località ColonettaDiProdo)(stelle 4) (camere-libere 1) (occupazione 0.7))
-    (albergo (id ColonettaDiProdo2) (località ColonettaDiProdo)(stelle 2) (camere-libere 1) (occupazione 0.7))
+    (albergo (id ColonettaDiProdo2) (località ColonettaDiProdo)(stelle 2) (camere-libere 3) (occupazione 0.7))
     (albergo (id Foggia1) (località Foggia) (stelle 4) (camere-libere 1) (occupazione 0.5))
-    (albergo (id Foggia2) (località Foggia) (stelle 2) (camere-libere 1) (occupazione 0.7))
-    (albergo (id OrtaNova1) (località OrtaNova) (stelle 4) (camere-libere 1) (occupazione 0.3))
+    (albergo (id Foggia2) (località Foggia) (stelle 2) (camere-libere 2) (occupazione 0.7))
+    (albergo (id OrtaNova1) (località OrtaNova) (stelle 4) (camere-libere 2) (occupazione 0.3))
     (albergo (id OrtaNova2) (località OrtaNova) (stelle 2) (camere-libere 1) (occupazione 0.7))
     (albergo (id DuaneraLaRocca1) (località DuaneraLaRocca) (stelle 4) (camere-libere 1) (occupazione 0.5))
     (albergo (id DuaneraLaRocca2) (località DuaneraLaRocca) (stelle 2) (camere-libere 1) (occupazione 0.7))
@@ -333,6 +307,14 @@ Esempio:
 
 (defmodule DOMINIO-ALBERGHI-PER-ITINERARIO (export ?ALL) (import MAIN ?ALL) (import DOMINIO ?ALL))
 
+(deftemplate alberghi-per-itinerario
+  (slot id)
+  (slot id-itinerario)
+  (multislot alberghi)
+  (multislot pernottamenti)
+  (slot costo)
+)
+
 (deffunction crea-lista-alberghi
   (?id-itinerario ?lista-località ?camere-richieste ?lista-alberghi)
   (if (eq (length$ ?lista-località) (length$ ?lista-alberghi))
@@ -376,35 +358,13 @@ Esempio:
   (crea-lista-alberghi ?id-itinerario ?lista-località ?camere-richieste (create$))
 )
 
-(defrule cf-alberghi-per-occupazione
-  (alberghi-per-itinerario (id ?id) (alberghi $?lista-alberghi))
-  =>
-  (bind ?occupazione-minore 1)
-
-  (foreach ?albergo ?lista-alberghi
-    (do-for-fact
-      ((?alb albergo))
-      (and
-        (eq ?alb:id ?albergo)
-        (< ?alb:occupazione ?occupazione-minore))
-      (bind ?occupazione-minore ?alb:occupazione)
-    )
-  )
-
-  (assert
-    (attribute
-      (name alberghi-preferiti-per-occupazione)
-      (value ?id)
-      (certainty (- 1 ?occupazione-minore))
-    )
-  )
-)
-
 (defrule pernottamenti
-  (alberghi-per-itinerario
+  ?alb-per-it <- (alberghi-per-itinerario
     (id ?id)
     (id-itinerario ?id-itinerario)
-    (alberghi $?id-alberghi))
+    (alberghi $?id-alberghi)
+    (pernottamenti $?p&:(= (length ?p) 0))
+  )
   (query (durata ?giorni))
   =>
   (bind ?min-occupazione 1)
@@ -431,11 +391,7 @@ Esempio:
     (replace$ ?pernottamenti ?indice-min-albergo ?indice-min-albergo
       (+ ?giorni-divisi-equamente ?giorni-rimanenti)))
 
-  (assert
-    (pernottamenti-per-itinerario
-      (id-itinerario ?id-itinerario)
-      (id-alberghi-per-itinerario ?id)
-      (pernottamenti ?pernottamenti)))
+  (modify ?alb-per-it (pernottamenti ?pernottamenti))
 )
 
 (deffunction costo-totale-itinerario
@@ -458,21 +414,52 @@ Esempio:
 
 (defrule costo-alberghi-per-itinerario
   (query (numero-persone ?persone))
-  (alberghi-per-itinerario (id ?id) (alberghi $?id-alberghi))
-  (pernottamenti-per-itinerario
-    (id-alberghi-per-itinerario ?id)
-    (pernottamenti $?pernottamenti))
-  =>
-  (assert
-    (costo-alberghi-per-itinerario
-      (id-alberghi-per-itinerario ?id)
-      (costo (costo-totale-itinerario ?id-alberghi ?persone ?pernottamenti))))
+  ?alb-per-it <- (alberghi-per-itinerario
+    (id ?id)
+    (alberghi $?id-alberghi)
+    (pernottamenti $?pernottamenti&:(> (length$ ?pernottamenti) 0))
+    (costo nil)
   )
+  =>
+  (modify
+    ?alb-per-it
+    (costo (costo-totale-itinerario ?id-alberghi ?persone ?pernottamenti))
+  )
+)
+
+(defmodule REGOLE-ALBERGHI
+  (import DOMINIO deftemplate itinerario)
+  (import DOMINIO-ALBERGHI-PER-ITINERARIO ?ALL))
+
+
+(defrule alberghi-preferiti-per-occupazione
+  (alberghi-per-itinerario (id ?id) (alberghi $?lista-alberghi))
+  =>
+  (bind ?occupazione-minore 1)
+
+  (foreach ?albergo ?lista-alberghi
+    (do-for-fact
+      ((?alb albergo))
+      (and
+        (eq ?alb:id ?albergo)
+        (< ?alb:occupazione ?occupazione-minore))
+      (bind ?occupazione-minore ?alb:occupazione)
+    )
+  )
+
+  (assert
+    (attribute
+      (name alberghi-preferiti-per-occupazione)
+      (value ?id)
+      (certainty (- 1 ?occupazione-minore))
+    )
+  )
+)
 
 (defrule alberghi-preferiti-per-budget
   (query (budget ?budget))
-  (costo-alberghi-per-itinerario
-    (id-alberghi-per-itinerario ?id)
+  (alberghi-per-itinerario
+    (id ?id)
     (costo ?costo-totale))
   =>
   ; 1 - (costo - budget) / soglia
@@ -513,7 +500,8 @@ Esempio:
       (certainty (min ?certainty-budget ?certainty-occupazione)))))
 
 (defrule scegli-lista-alberghi-per-cf-maggiore
-  ?itinerario <- (itinerario (id ?id-itinerario))
+  (declare (salience -10))
+  ?itinerario <- (itinerario (id ?id-itinerario) (costo nil))
   =>
   (bind ?max-certainty -2)
   (bind ?lista-alberghi-migliore nil)
@@ -537,7 +525,20 @@ Esempio:
     (retract ?itinerario)
     else
     ; Imposta la lista di alberghi come definitiva.
-    (modify ?lista-alberghi-migliore (definitivo TRUE))
+    (modify ?itinerario
+      (alberghi (fact-slot-value ?lista-alberghi-migliore alberghi))
+      (pernottamenti (fact-slot-value ?lista-alberghi-migliore pernottamenti))
+      (costo (fact-slot-value ?lista-alberghi-migliore costo))
+    )
+    ; Asserisco l'attribute qua per non perdere l'associazione tra l'itinerario
+    ; e il CF (e non doverlo ricalcolare dopo).
+    (assert
+      (attribute
+        (name itinerario-preferito-per-alberghi)
+        (value ?id-itinerario)
+        (certainty ?max-certainty)
+      )
+    )
   )
 )
 
@@ -636,7 +637,7 @@ Esempio:
     (attribute
       (name località-preferita)
       (value ?località)
-      (certainty (min ?certezza-regione ?certezza-turismo)))))
+      (certainty (max ?certezza-regione ?certezza-turismo)))))
 
 
 (defrule itinerario-preferito-per-località
@@ -652,26 +653,6 @@ Esempio:
       (name itinerario-preferito-per-località)
       (value ?id)
       (certainty ?cert))
-  )
-)
-
-(defrule itinerario-preferito-per-alberghi
-  (itinerario (id ?id-itinerario))
-  (alberghi-per-itinerario
-    (id-itinerario ?id-itinerario)
-    (id ?id-alb-per-it)
-    (definitivo TRUE))
-  (attribute
-    (name alberghi-preferiti)
-    (value ?id-alb-per-it)
-    (certainty ?cert))
-  =>
-  (assert
-    (attribute
-      (name itinerario-preferito-per-alberghi)
-      (value ?id-itinerario)
-      (certainty ?cert)
-    )
   )
 )
 
@@ -703,28 +684,17 @@ Esempio:
 
 (deffunction stampa-itinerario
   (?id-itinerario)
-  (do-for-fact (
-      (?itinerario itinerario)
-      (?alberghi-per-it alberghi-per-itinerario)
-      (?pernottamenti-per-it pernottamenti-per-itinerario)
-      (?costo-alb-per-it costo-alberghi-per-itinerario)
-    )
-    (and
-      (eq ?itinerario:id ?id-itinerario)
-      (eq ?alberghi-per-it:id-itinerario ?itinerario:id)
-      (eq ?alberghi-per-it:definitivo TRUE)
-      (eq ?costo-alb-per-it:id-alberghi-per-itinerario ?alberghi-per-it:id)
-      (eq ?pernottamenti-per-it:id-alberghi-per-itinerario ?alberghi-per-it:id)
-    )
+  (do-for-fact ((?itinerario itinerario))
+    (eq ?itinerario:id ?id-itinerario)
 
-    (printout t "Costo totale: " ?costo-alb-per-it:costo crlf)
+    (printout t "Costo totale: " ?itinerario:costo crlf)
     (printout t crlf)
     (format t "%-21s%-20s%-10s%-10s%n" "Località" "Albergo" "Stelle" "Notti")
-    (printout t "-------------------------------------------------------------" crlf)
+    (printout t "-------------------------------------------------------" crlf)
 
-    (foreach ?id-albergo ?alberghi-per-it:alberghi
+    (foreach ?id-albergo ?itinerario:alberghi
       (bind ?pernottamenti
-        (nth$ ?id-albergo-index ?pernottamenti-per-it:pernottamenti))
+        (nth$ ?id-albergo-index ?itinerario:pernottamenti))
       (do-for-fact
         ((?albergo albergo))
         (eq ?albergo:id ?id-albergo)
@@ -744,6 +714,7 @@ Esempio:
 )
 
 (defrule seleziona-itinerari-migliori
+  ?query <- (query)
   =>
   (bind ?attribute-itinerari
     (find-all-facts ((?att attribute))
@@ -756,6 +727,8 @@ Esempio:
     (sort compara-attribute ?attribute-itinerari)
   )
 
+  (printout t crlf "La tua richiesta:" crlf crlf)
+  (ppfact ?query t FALSE)
   (printout t crlf)
 
   (if (> (length$ ?attribute-itinerari) 0)
@@ -764,6 +737,8 @@ Esempio:
     else
     (printout t "Spiacente, il sistema non ha trovato risultati." crlf)
   )
+
+  (printout t crlf)
 
   ; Stampa sempre i primi due risultati.
   ; Stampa i tre risultati successivi finché hanno certainty >= 0.
