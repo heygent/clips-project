@@ -2,7 +2,7 @@
 
 (defglobal
   ; Mostra o nasconde alcune stampe
-  ?*DEBUG* = TRUE
+  ?*DEBUG* = FALSE
   ; Se la distanza di due località A e B è inferiore a questo numero, allora A
   ; può essere inclusa come tappa successiva di B in un itinerario e viceversa.
   ?*SOGLIA-LOCALITÀ-VICINA* = 100
@@ -148,10 +148,6 @@
 )
 
 (deffacts località-tipo-turismo
-    (località-tipo-turismo
-      (nome-località Torino)
-      (tipo balneare)
-      (punteggio 3))
     (località-tipo-turismo (nome-località Torino) (tipo balneare) (punteggio 3))
     (località-tipo-turismo (nome-località Milano) (tipo balneare) (punteggio 2))
     (località-tipo-turismo (nome-località MonculoPiemontese) (tipo balneare) (punteggio 4))
@@ -233,12 +229,21 @@
 
 (deffunction asserisci-itinerari
   (?lista-località-itinerario ?lunghezza-itinerario)
-  (if (< (length$ ?lista-località-itinerario) ?lunghezza-itinerario)
+  (if (= (length$ ?lista-località-itinerario) ?lunghezza-itinerario)
     then
+    (assert
+      (itinerario
+        (id (implode$ (sort sort-cmp-string ?lista-località-itinerario)))
+        (località ?lista-località-itinerario)
+      )
+    )
+    else
     (do-for-all-facts
       ((?località-partenza località) (?località-destinazione località))
       (and
         (eq ?località-partenza:nome (last ?lista-località-itinerario))
+        ; Prendi località distanti al massimo ?*SOGLIA-LOCALITÀ-VICINI
+        ; dall'ultima località.
         (<
           (distanza-coordinate
             ?località-partenza:lat
@@ -246,18 +251,12 @@
             ?località-destinazione:lat
             ?località-destinazione:lon)
           ?*SOGLIA-LOCALITÀ-VICINA*)
+        ; Non mettere due volte la stessa località in un itinerario.
         (not (member$ ?località-destinazione:nome ?lista-località-itinerario))
       )
       (asserisci-itinerari
         (create$ ?lista-località-itinerario ?località-destinazione:nome)
         ?lunghezza-itinerario
-      )
-    )
-    else
-    (assert
-      (itinerario
-        (id (implode$ (sort sort-cmp-string ?lista-località-itinerario)))
-        (località ?lista-località-itinerario)
       )
     )
   )
@@ -281,7 +280,7 @@
 (defmodule DOMINIO-ALBERGHI-PER-ITINERARIO (export ?ALL) (import MAIN ?ALL) (import DOMINIO ?ALL))
 
 (deffunction crea-lista-alberghi
-  (?id-itinerario ?lista-località ?lista-alberghi)
+  (?id-itinerario ?lista-località ?camere-richieste ?lista-alberghi)
   (if (eq (length$ ?lista-località) (length$ ?lista-alberghi))
     then
     (if ?*DEBUG* then
@@ -302,19 +301,25 @@
       )
     )
     (do-for-all-facts ((?albergo albergo))
-      (eq ?albergo:località ?nome-località-successiva)
+      (and
+        (eq ?albergo:località ?nome-località-successiva)
+        (>= ?albergo:camere-libere ?camere-richieste)
+      )
       (crea-lista-alberghi
         ?id-itinerario
         ?lista-località
+        ?camere-richieste
         (create$ ?lista-alberghi ?albergo:id))
     )
   )
 )
 
 (defrule crea-liste-alberghi
+  (query (numero-persone ?persone))
   (itinerario (id ?id-itinerario) (località $?lista-località))
   =>
-  (crea-lista-alberghi ?id-itinerario ?lista-località (create$))
+  (bind ?camere-richieste (+ (div ?persone 2) (mod ?persone 2)))
+  (crea-lista-alberghi ?id-itinerario ?lista-località ?camere-richieste (create$))
 )
 
 (defrule cf-alberghi-per-occupazione
@@ -338,29 +343,6 @@
       (value ?id)
       (certainty (- 1 ?occupazione-minore))
     ))
-)
-
-(defrule elimina-alberghi-per-disponibilità
-  "Elimina i fatti alberghi-per-itinerario che contengono alberghi che non hanno
-   abbastanza posti liberi per soddisfare i requisiti dell'utente."
-  (alberghi-per-itinerario
-    (id ?id)
-    (alberghi $?lista-alberghi)
-  )
-  (query (numero-persone ?persone))
-  =>
-  (bind ?camere-necessarie (+ (div ?persone 2) (mod ?persone 2)))
-
-  (foreach ?albergo ?lista-alberghi
-
-    (do-for-fact ((?alb albergo)) (eq ?alb:id ?albergo)
-      (if (> ?camere-necessarie ?alb:camere-libere) then
-        (do-for-fact ((?lista alberghi-per-itinerario)) (eq ?lista:id ?id)
-          (retract ?lista)
-        )
-      )
-    )
-  )
 )
 
 (defrule pernottamenti
@@ -401,16 +383,10 @@
       (pernottamenti ?pernottamenti)))
 )
 
-(defrule alberghi-preferiti-per-budget
-  (query (budget ?budget) (numero-persone ?persone))
-  (alberghi-per-itinerario (id ?id) (alberghi $?id-alberghi))
-  (pernottamenti-per-itinerario
-    (id-alberghi-per-itinerario ?id)
-    (pernottamenti $?pernottamenti))
-  =>
+(deffunction costo-totale-itinerario
+  (?id-alberghi ?persone ?pernottamenti)
   (bind ?camere-necessarie (+ (div ?persone 2) (mod ?persone 2)))
   (bind ?costo-totale 0)
-
   (foreach ?id-albergo ?id-alberghi
     (do-for-fact ((?albergo albergo))
       (eq ?albergo:id ?id-albergo)
@@ -422,6 +398,18 @@
           ?pernottamenti-albergo))
       (bind ?costo-totale (+ ?costo-totale ?costo-albergo)))
   )
+  ?costo-totale
+)
+
+(defrule alberghi-preferiti-per-budget
+  (query (budget ?budget) (numero-persone ?persone))
+  (alberghi-per-itinerario (id ?id) (alberghi $?id-alberghi))
+  (pernottamenti-per-itinerario
+    (id-alberghi-per-itinerario ?id)
+    (pernottamenti $?pernottamenti))
+  =>
+  (bind ?costo-totale
+    (costo-totale-itinerario ?id-alberghi ?persone ?pernottamenti))
 
   ; 1 - (costo - budget) / soglia
   (bind ?certainty
@@ -640,7 +628,93 @@
       (certainty (min ?cert-per-località ?cert-per-alberghi))))
 )
 
-(defmodule PRINT-RESULTS (import MAIN ?ALL))
+(defmodule PRINT-RESULTS (import MAIN ?ALL) (import DOMINIO ?ALL))
+
+(deffunction compara-attribute
+  (?it1 ?it2)
+  (<
+    (fact-slot-value ?it1 certainty)
+    (fact-slot-value ?it2 certainty))
+)
+
+(deffunction stampa-itinerario
+  (?id-itinerario)
+  (do-for-fact (
+      (?itinerario itinerario)
+      (?alberghi-per-it alberghi-per-itinerario)
+      (?pernottamenti-per-it pernottamenti-per-itinerario)
+    )
+    (and
+      (eq ?itinerario:id ?id-itinerario)
+      (eq ?itinerario:id ?alberghi-per-it:id-itinerario)
+      (eq ?alberghi-per-it:definitivo TRUE)
+      (eq ?pernottamenti-per-it:id-alberghi-per-itinerario ?alberghi-per-it:id)
+    )
+
+    (printout t crlf)
+    (format t "%-21s%-20s%-10s%-10s%n" "Località" "Albergo" "Stelle" "Notti")
+    (printout t "-------------------------------------------------------------" crlf)
+
+    (foreach ?id-albergo ?alberghi-per-it:alberghi
+      (bind ?pernottamenti
+        (nth$ ?id-albergo-index ?pernottamenti-per-it:pernottamenti))
+      (do-for-fact
+        ((?albergo albergo))
+        (eq ?albergo:id ?id-albergo)
+        (bind ?stelle "")
+        (loop-for-count (?i ?albergo:stelle) do
+          (bind ?stelle (str-cat ?stelle "*")))
+        (format t "%-20s%-20s%-10s%-10g%n"
+          ?albergo:località
+          ?albergo:id
+          ?stelle
+          ?pernottamenti
+        )
+      )
+    )
+    (printout t crlf)
+  )
+)
+
+(defrule seleziona-itinerari-migliori
+  =>
+  (printout t "
+  /$$$$$$$                                 /$$$$$$                  /$$                               /$$    /$$          /$$
+ | $$__  $$                               /$$__  $$                | $$                              | $$   | $$         |__/
+ | $$  \\ $$  /$$$$$$  /$$    /$$ /$$$$$$ | $$  \\ $$ /$$$$$$$   /$$$$$$$  /$$$$$$   /$$$$$$   /$$$$$$ | $$   | $$ /$$$$$$  /$$
+ | $$  | $$ /$$__  $$|  $$  /$$//$$__  $$| $$$$$$$$| $$__  $$ /$$__  $$ |____  $$ /$$__  $$ /$$__  $$|  $$ / $$/|____  $$| $$
+ | $$  | $$| $$  \\ $$ \\  $$/$$/| $$$$$$$$| $$__  $$| $$  \\ $$| $$  | $$  /$$$$$$$| $$  \\__/| $$$$$$$$ \\  $$ $$/  /$$$$$$$| $$
+ | $$  | $$| $$  | $$  \\  $$$/ | $$_____/| $$  | $$| $$  | $$| $$  | $$ /$$__  $$| $$      | $$_____/  \\  $$$/  /$$__  $$| $$
+ | $$$$$$$/|  $$$$$$/   \\  $/  |  $$$$$$$| $$  | $$| $$  | $$|  $$$$$$$|  $$$$$$$| $$      |  $$$$$$$   \\  $/  |  $$$$$$$| $$
+ |_______/  \\______/     \\_/    \\_______/|__/  |__/|__/  |__/ \\_______/ \\_______/|__/       \\_______/    \\_/    \\_______/|__/
+
+Benvenuto a DoveAndareVai©™, il sistema esperto per organizzare i tuoi viaggi.
+Abbiamo alcuni itinerari da suggerirti.
+" crlf)
+
+  (bind ?attribute-itinerari
+    (find-all-facts ((?att attribute))
+      (eq ?att:name itinerario-preferito)
+    )
+  )
+
+  ; Ordina gli attribute in ordine decrescente di CF
+  (bind ?attribute-itinerari
+    (sort compara-attribute ?attribute-itinerari)
+  )
+
+  ; Stampa sempre i primi due risultati.
+  ; Stampa i tre risultati successivi finché hanno certainty >= 0.
+  (foreach ?att-itinerario (subseq$ ?attribute-itinerari 1 5)
+    (if
+      (and
+        (< (fact-slot-value ?att-itinerario certainty) 0)
+        (> ?att-itinerario-index 2)
+      )
+      then (break))
+    (printout t "Itinerario " ?att-itinerario-index crlf)
+    (stampa-itinerario (fact-slot-value ?att-itinerario value)))
+)
 
 (defrule stampa-attributi
   ?rem <-
