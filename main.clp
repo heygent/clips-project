@@ -2,7 +2,7 @@
 
 (defglobal
   ; Mostra o nasconde i messaggi di debug
-  ?*DEBUG* = FALSE
+  ?*DEBUG* = TRUE
   ; name degli attribute da stampare
   ?*DEBUG-ATTRIBUTE-NAMES* = (create$
      località-preferita-per-regione
@@ -27,8 +27,8 @@
 )
 
 (deftemplate query
-  (slot giorni (type INTEGER) (range 0 ?VARIABLE) (default 5))
-  (slot numero-persone (range 0 ?VARIABLE) (type INTEGER) (default 2))
+  (slot giorni (type INTEGER) (range 1 ?VARIABLE) (default 5))
+  (slot numero-persone (type INTEGER) (range 1 ?VARIABLE) (default 2))
   (slot numero-città (range 0 ?VARIABLE) (type INTEGER) (default 3))
   (multislot regioni-da-includere (type SYMBOL))
   (multislot regioni-da-escludere (type SYMBOL))
@@ -178,10 +178,10 @@ Esempio:
 (deffacts località-tipo-turismo
     (località-tipo-turismo (nome-località Torino) (tipo balneare) (punteggio 3))
     (località-tipo-turismo (nome-località Milano) (tipo balneare) (punteggio 2))
-    (località-tipo-turismo (nome-località MonculoPiemontese) (tipo balneare) (punteggio 4))
+    (località-tipo-turismo (nome-località LontanoPiemontese) (tipo balneare) (punteggio 4))
     (località-tipo-turismo (nome-località Macerata) (tipo balneare) (punteggio 1))
     (località-tipo-turismo (nome-località Camerino) (tipo balneare) (punteggio 2))
-    (località-tipo-turismo (nome-località acquasparta) (tipo balneare) (punteggio 4))
+    (località-tipo-turismo (nome-località Acquasparta) (tipo balneare) (punteggio 4))
     (località-tipo-turismo (nome-località ColonettaDiProdo) (tipo balneare) (punteggio 5))
     (località-tipo-turismo (nome-località Foggia) (tipo balneare) (punteggio 3))
     (località-tipo-turismo (nome-località OrtaNova) (tipo balneare) (punteggio 2))
@@ -196,7 +196,7 @@ Esempio:
 (deffacts località
     (località (nome Torino) (lat -30) (lon 150))
     (località (nome Milano) (lat 20) (lon 150))
-    (località (nome MonculoPiemontese) (lat -50) (lon 188))
+    (località (nome LontanoPiemontese) (lat -50) (lon 188))
     (località (nome Macerata) (lat 80 ) (lon 80))
     (località (nome Camerino) (lat 80) (lon 70))
     (località (nome acquasparta) (lat 70 ) (lon 60))
@@ -212,8 +212,8 @@ Esempio:
     (albergo (id Torino2) (località Torino) (stelle 2) (camere-libere 5) (occupazione 0.7))
     (albergo (id Milano1) (località Milano) (stelle 4) (camere-libere 5) (occupazione 0.7))
     (albergo (id Milano2) (località Milano) (stelle 2) (camere-libere 5) (occupazione 0.5))
-    (albergo (id MonculoPiemontese1) (località MonculoPiemontese) (stelle 4) (camere-libere 5) (occupazione 0.5))
-    (albergo (id MonculoPiemontese2) (località MonculoPiemontese) (stelle 2) (camere-libere 5) (occupazione 0.7))
+    (albergo (id LontanoPiemontese1) (località LontanoPiemontese) (stelle 4) (camere-libere 5) (occupazione 0.5))
+    (albergo (id LontanoPiemontese2) (località LontanoPiemontese) (stelle 2) (camere-libere 5) (occupazione 0.7))
     (albergo (id Macerata1) (località Macerata) (stelle 4) (camere-libere 3) (occupazione 0.7))
     (albergo (id Macerata2) (località Macerata) (stelle 2) (camere-libere 1) (occupazione 0.3))
     (albergo (id Camerino1) (località Camerino) (stelle 4) (camere-libere 1) (occupazione 0.5))
@@ -270,7 +270,7 @@ Esempio:
       ((?località-partenza località) (?località-destinazione località))
       (and
         (eq ?località-partenza:nome (last ?lista-località-itinerario))
-        ; Prendi località distanti al massimo ?*SOGLIA-LOCALITÀ-VICINI
+        ; Prendi località distanti al massimo ?*SOGLIA-LOCALITÀ-VICINA
         ; dall'ultima località.
         (<
           (distanza-coordinate
@@ -613,31 +613,27 @@ Esempio:
   =>
   (assert
     (attribute
-      (name località-preferita-per-regione)
-      (value ?nome-località)
-      (certainty 0)))
-  (assert
-    (attribute
-      (name località-preferita-per-turismo)
+      (name località-preferita)
       (value ?nome-località)
       (certainty 0)))
 )
 
 (defrule località-preferita
-  (attribute
-    (name località-preferita-per-regione)
+  ?att <- (attribute
+    (name ?name & località-preferita-per-regione | località-preferita-per-turismo)
     (value ?località)
-    (certainty ?certezza-regione))
-  (attribute
-    (name località-preferita-per-turismo)
-    (value ?località)
-    (certainty ?certezza-turismo))
+    (certainty ?cert))
   =>
+  (if ?*DEBUG* then
+    (printout t "defrule località-preferita" crlf)
+    (printout t ?name "\t" ?località "\t" ?cert crlf)
+    (printout t crlf)
+  )
   (assert
     (attribute
       (name località-preferita)
       (value ?località)
-      (certainty (max ?certezza-regione ?certezza-turismo)))))
+      (certainty ?cert))))
 
 
 (defrule itinerario-preferito-per-località
@@ -699,7 +695,7 @@ Esempio:
         ((?albergo albergo))
         (eq ?albergo:id ?id-albergo)
         (bind ?stelle "")
-        (loop-for-count (?i ?albergo:stelle) do
+        (loop-for-count ?albergo:stelle do
           (bind ?stelle (str-cat ?stelle "*")))
         (format t "%-20s%-20s%-10s%-10g%n"
           ?albergo:località
