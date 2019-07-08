@@ -2,7 +2,7 @@
 
 (defglobal
   ; Mostra o nasconde i messaggi di debug
-  ?*DEBUG* = TRUE
+  ?*DEBUG* = FALSE
   ; name degli attribute da stampare
   ?*DEBUG-ATTRIBUTE-NAMES* = (create$
      località-preferita-per-regione
@@ -50,6 +50,7 @@
 
 (defrule help
   (not (query))
+  (test (eq ?*DEBUG* FALSE))
   =>
   (printout t "
   /$$$$$$$                                 /$$$$$$                  /$$                               /$$    /$$          /$$
@@ -626,9 +627,9 @@ Esempio:
   =>
   (if ?*DEBUG* then
     (printout t "defrule località-preferita" crlf)
-    (printout t ?name "\t" ?località "\t" ?cert crlf)
-    (printout t crlf)
-  )
+    (printout t ?name " " ?località " " ?cert crlf)
+    (printout t crlf))
+
   (assert
     (attribute
       (name località-preferita)
