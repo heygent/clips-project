@@ -46,7 +46,7 @@
   (query)
   =>
   (set-fact-duplication TRUE)
-  (focus DOMINIO DOMINIO-ALBERGHI-PER-ITINERARIO REGOLE-ALBERGHI REGOLE REASONING PRINT-RESULTS))
+  (focus DOMINIO DOMINIO-ALBERGHI-PER-ITINERARIO REGOLE-ALBERGHI REGOLE REASONING REASONING-ITINERARIO PRINT-RESULTS))
 
 (defrule help
   (not (query))
@@ -120,6 +120,23 @@ Esempio:
   (?stelle)
   (+ 25 (* ?stelle 25)))
 
+(deffunction costo-albergo
+  "Calcola il costo totale di una prenotazione in un albergo."
+  (?stelle ?camere ?pernottamenti)
+  (*
+    (da-stelle-a-prezzo ?stelle)
+    ?camere
+    ?pernottamenti
+  )
+)
+
+(deffunction camere-per-persone
+  "Dato un numero di persone, restituisce il numero di camere necessare da
+  prenotare."
+  (?persone)
+  (+ (div ?persone 2) (mod ?persone 2))
+)
+
 (deffunction limita (?min ?max ?num)
   "Confina il valore di ?num tra ?min e ?max."
   (min ?max (max ?min ?num)))
@@ -140,6 +157,12 @@ Esempio:
   (nth$ (length$ ?multifield) ?multifield))
 
 (defmodule DOMINIO (export ?ALL) (import MAIN ?ALL))
+
+(defrule carica-dominio
+  (declare (salience 10000))
+  =>
+  (load-facts dominio.clp)
+)
 
 (deftemplate località
   (slot nome)
@@ -174,86 +197,6 @@ Esempio:
   (multislot alberghi)
   (multislot pernottamenti)
   (slot costo)
-)
-
-(deffacts località-tipo-turismo
-    (località-tipo-turismo (nome-località Torino) (tipo balneare) (punteggio 3))
-    (località-tipo-turismo (nome-località Milano) (tipo balneare) (punteggio 2))
-    (località-tipo-turismo (nome-località LontanoPiemontese) (tipo balneare) (punteggio 4))
-    (località-tipo-turismo (nome-località Macerata) (tipo balneare) (punteggio 1))
-    (località-tipo-turismo (nome-località Camerino) (tipo balneare) (punteggio 2))
-    (località-tipo-turismo (nome-località Acquasparta) (tipo balneare) (punteggio 4))
-    (località-tipo-turismo (nome-località ColonettaDiProdo) (tipo balneare) (punteggio 5))
-    (località-tipo-turismo (nome-località Foggia) (tipo balneare) (punteggio 3))
-    (località-tipo-turismo (nome-località OrtaNova) (tipo balneare) (punteggio 2))
-    (località-tipo-turismo (nome-località DuaneraLaRocca) (tipo balneare) (punteggio 5))
-    (località-tipo-turismo (nome-località Zapponeta) (tipo balneare) (punteggio 4))
-)
-
-;LATITUDINE        LONGITUDINE
-;EST 50 100       SUD 0 -100
-;CENTRO 0 50      CENTRO 0 100
-;OVEST -50 0      NORD 100 200
-(deffacts località
-    (località (nome Torino) (lat -30) (lon 150))
-    (località (nome Milano) (lat 20) (lon 150))
-    (località (nome LontanoPiemontese) (lat -50) (lon 188))
-    (località (nome Macerata) (lat 80 ) (lon 80))
-    (località (nome Camerino) (lat 80) (lon 70))
-    (località (nome acquasparta) (lat 70 ) (lon 60))
-    (località (nome ColonettaDiProdo)(lat 75) (lon 50))
-    (località (nome Foggia) (lat 80) (lon -50))
-    (località (nome OrtaNova) (lat 70) (lon -80))
-    (località (nome DuaneraLaRocca) (lat 20) (lon -10))
-    (località (nome Zapponeta) (lat 10) (lon -100))
-    )
-
-(deffacts alberghi
-    (albergo (id Torino1) (località Torino) (stelle 4) (camere-libere 5) (occupazione 0.3))
-    (albergo (id Torino2) (località Torino) (stelle 2) (camere-libere 5) (occupazione 0.7))
-    (albergo (id Milano1) (località Milano) (stelle 4) (camere-libere 5) (occupazione 0.7))
-    (albergo (id Milano2) (località Milano) (stelle 2) (camere-libere 5) (occupazione 0.5))
-    (albergo (id LontanoPiemontese1) (località LontanoPiemontese) (stelle 4) (camere-libere 5) (occupazione 0.5))
-    (albergo (id LontanoPiemontese2) (località LontanoPiemontese) (stelle 2) (camere-libere 5) (occupazione 0.7))
-    (albergo (id Macerata1) (località Macerata) (stelle 4) (camere-libere 3) (occupazione 0.7))
-    (albergo (id Macerata2) (località Macerata) (stelle 2) (camere-libere 1) (occupazione 0.3))
-    (albergo (id Camerino1) (località Camerino) (stelle 4) (camere-libere 1) (occupazione 0.5))
-    (albergo (id Camerino2) (località Camerino) (stelle 2) (camere-libere 1) (occupazione 0.7))
-    (albergo (id acquasparta1) (località acquasparta) (stelle 4) (camere-libere 1) (occupazione 0.7))
-    (albergo (id acquasparta2) (località acquasparta) (stelle 2) (camere-libere 1) (occupazione 0.3))
-    (albergo (id ColonettaDiProdo1) (località ColonettaDiProdo)(stelle 4) (camere-libere 1) (occupazione 0.7))
-    (albergo (id ColonettaDiProdo2) (località ColonettaDiProdo)(stelle 2) (camere-libere 3) (occupazione 0.7))
-    (albergo (id Foggia1) (località Foggia) (stelle 4) (camere-libere 1) (occupazione 0.5))
-    (albergo (id Foggia2) (località Foggia) (stelle 2) (camere-libere 2) (occupazione 0.7))
-    (albergo (id OrtaNova1) (località OrtaNova) (stelle 4) (camere-libere 2) (occupazione 0.3))
-    (albergo (id OrtaNova2) (località OrtaNova) (stelle 2) (camere-libere 1) (occupazione 0.7))
-    (albergo (id DuaneraLaRocca1) (località DuaneraLaRocca) (stelle 4) (camere-libere 1) (occupazione 0.5))
-    (albergo (id DuaneraLaRocca2) (località DuaneraLaRocca) (stelle 2) (camere-libere 1) (occupazione 0.7))
-    (albergo (id Zapponeta1) (località Zapponeta) (stelle 4) (camere-libere 1) (occupazione 0.5))
-    (albergo (id Zapponeta2) (località Zapponeta) (stelle 2) (camere-libere 1) (occupazione 0.3))
-    )
-
-(deffacts regioni
-    (regione
-        (nome Piemonte)
-        (lat -30)
-        (lon 140)
-        (raggio 30))
-    (regione
-        (nome Lombardia)
-        (lat 30)
-        (lon 150)
-        (raggio 30))
-    (regione
-        (nome Marche)
-        (lat 90)
-        (lon 90)
-        (raggio 30))
-    (regione
-        (nome Puglia)
-        (lat 70)
-        (lon -30)
-        (raggio 30))
 )
 
 (deffunction asserisci-itinerari
@@ -355,8 +298,12 @@ Esempio:
   (query (numero-persone ?persone))
   (itinerario (id ?id-itinerario) (località $?lista-località))
   =>
-  (bind ?camere-richieste (+ (div ?persone 2) (mod ?persone 2)))
-  (crea-lista-alberghi ?id-itinerario ?lista-località ?camere-richieste (create$))
+  (crea-lista-alberghi
+    ?id-itinerario
+    ?lista-località
+    (camere-per-persone ?persone)
+    (create$)
+  )
 )
 
 (defrule pernottamenti
@@ -395,19 +342,22 @@ Esempio:
   (modify ?alb-per-it (pernottamenti ?pernottamenti))
 )
 
+
 (deffunction costo-totale-itinerario
   (?id-alberghi ?persone ?pernottamenti)
-  (bind ?camere-necessarie (+ (div ?persone 2) (mod ?persone 2)))
+  (bind ?camere-necessarie (camere-per-persone ?persone))
   (bind ?costo-totale 0)
   (foreach ?id-albergo ?id-alberghi
     (do-for-fact ((?albergo albergo))
       (eq ?albergo:id ?id-albergo)
       (bind ?pernottamenti-albergo (nth$ ?id-albergo-index ?pernottamenti))
       (bind ?costo-albergo
-        (*
-          (da-stelle-a-prezzo ?albergo:stelle)
+        (costo-albergo
+          ?albergo:stelle
           ?camere-necessarie
-          ?pernottamenti-albergo))
+          ?pernottamenti-albergo
+        )
+      )
       (bind ?costo-totale (+ ?costo-totale ?costo-albergo)))
   )
   ?costo-totale
@@ -636,6 +586,10 @@ Esempio:
       (value ?località)
       (certainty ?cert))))
 
+(defmodule REASONING-ITINERARIO
+  (import MAIN ?ALL)
+  (import DOMINIO deftemplate itinerario)
+)
 
 (defrule itinerario-preferito-per-località
   (itinerario (id ?id) (località $? ?località $?))
@@ -680,14 +634,33 @@ Esempio:
 )
 
 (deffunction stampa-itinerario
-  (?id-itinerario)
-  (do-for-fact ((?itinerario itinerario))
+  (?id-itinerario ?indice-itinerario)
+  (do-for-fact ((?itinerario itinerario) (?query query))
     (eq ?itinerario:id ?id-itinerario)
+    (bind ?camere (camere-per-persone ?query:numero-persone))
 
-    (printout t "Costo totale: " ?itinerario:costo crlf)
+    (printout t
+      crlf
+      ": Itinerario " ?indice-itinerario
+      ", costo totale: " ?itinerario:costo crlf)
+
     (printout t crlf)
-    (format t "%-21s%-20s%-10s%-10s%n" "Località" "Albergo" "Stelle" "Notti")
-    (printout t "-------------------------------------------------------" crlf)
+    (format t "%-21s%-20s%-10s%-8s%-10s%-10s%n"
+      "Località"
+      "Albergo"
+      "Stelle"
+      "Notti"
+      "Camere"
+      "Costo"
+    )
+    (format t "%-20s%-20s%-10s%-8s%-10s%-10s%n"
+      "------------------"
+      "-------------------"
+      "---------"
+      "-------"
+      "---------"
+      "---------"
+    )
 
     (foreach ?id-albergo ?itinerario:alberghi
       (bind ?pernottamenti
@@ -695,22 +668,26 @@ Esempio:
       (do-for-fact
         ((?albergo albergo))
         (eq ?albergo:id ?id-albergo)
-        (bind ?stelle "")
+        (bind ?stelle-str "")
         (loop-for-count ?albergo:stelle do
-          (bind ?stelle (str-cat ?stelle "*")))
-        (format t "%-20s%-20s%-10s%-10g%n"
+          (bind ?stelle-str (str-cat ?stelle-str "*")))
+        (format t "%-20s%-20s%-10s%-8g%-10g%-10g%n"
           ?albergo:località
           ?albergo:id
-          ?stelle
+          ?stelle-str
           ?pernottamenti
+          ?camere
+          (costo-albergo ?albergo:stelle ?camere ?pernottamenti)
         )
       )
     )
+
+
     (printout t crlf)
   )
 )
 
-(defrule seleziona-itinerari-migliori
+(defrule stampa-itinerari-migliori
   ?query <- (query)
   =>
   (bind ?attribute-itinerari
@@ -746,8 +723,9 @@ Esempio:
         (> ?att-itinerario-index 2)
       )
       then (break))
-    (printout t "-- Itinerario " ?att-itinerario-index " --" crlf)
-    (stampa-itinerario (fact-slot-value ?att-itinerario value))
+    (stampa-itinerario
+      (fact-slot-value ?att-itinerario value)
+      ?att-itinerario-index)
   )
 )
 
