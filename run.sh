@@ -9,11 +9,11 @@ $DEBUG_STR
 (assert
  (query
    (giorni 3)
-   (numero-città 2)
-   (numero-persone 3) 
-   (budget 500)
-   (regioni-da-escludere Piemonte)
-   (turismo montano enogastronomico)))
+   (numero-città 3)
+   (numero-persone 4) 
+   (budget 700)
+ )
+)
 (run)
 (exit)
 EOF

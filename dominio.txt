@@ -145,17 +145,17 @@
   (nome Foggia)
   (lat 300)
   (lon -301)
-  (turismo balneare 4)
+  (turismo balneare 4 termale 5)
 )
 
-(albergo (id Foggia1) (località Foggia) (stelle 4) (camere-libere 1) (occupazione 0.5))
+(albergo (id Foggia1) (località Foggia) (stelle 4) (camere-libere 2) (occupazione 0.5))
 (albergo (id Foggia2) (località Foggia) (stelle 2) (camere-libere 2) (occupazione 0.7))
 
 (località
   (nome OrtaNova)
   (lat 300)
   (lon -332)
-  (turismo balneare 4)
+  (turismo balneare 3 termale 4)
 )
 
 (albergo (id OrtaNova1) (località OrtaNova) (stelle 4) (camere-libere 2) (occupazione 0.3))
@@ -168,15 +168,15 @@
   (turismo balneare 4)
 )
 
-(albergo (id DuaneraLaRocca1) (località DuaneraLaRocca) (stelle 4) (camere-libere 1) (occupazione 0.5))
+(albergo (id DuaneraLaRocca1) (località DuaneraLaRocca) (stelle 4) (camere-libere 2) (occupazione 0.5))
 (albergo (id DuaneraLaRocca2) (località DuaneraLaRocca) (stelle 2) (camere-libere 1) (occupazione 0.7))
 
 (località
   (nome Zapponeta)
   (lat 300)
   (lon -310)
-  (turismo balneare 4)
+  (turismo balneare 4 termale 2)
 )
 
-(albergo (id Zapponeta1) (località Zapponeta) (stelle 4) (camere-libere 1) (occupazione 0.5))
-(albergo (id Zapponeta2) (località Zapponeta) (stelle 2) (camere-libere 1) (occupazione 0.3))
+(albergo (id Zapponeta1) (località Zapponeta) (stelle 4) (camere-libere 3) (occupazione 0.5))
+(albergo (id Zapponeta2) (località Zapponeta) (stelle 2) (camere-libere 2) (occupazione 0.3))

@@ -56,7 +56,16 @@
   (query)
   =>
   (set-fact-duplication TRUE)
-  (focus DOMINIO DOMINIO-ALBERGHI-PER-ITINERARIO REGOLE-ALBERGHI REGOLE REASONING REASONING-ITINERARIO PRINT-RESULTS))
+  (focus
+    DOMINIO
+    DOMINIO-ALBERGHI-PER-ITINERARIO
+    REGOLE-ALBERGHI
+    REGOLE
+    REASONING
+    REASONING-ITINERARIO
+    PRINT-RESULTS
+  )
+)
 
 (defrule help
   (not (query))
@@ -596,10 +605,6 @@ Esempio:
       (value ?località)
       (certainty ?cert))))
 
-(defmodule REASONING-ITINERARIO
-  (import MAIN ?ALL)
-  (import DOMINIO deftemplate itinerario)
-)
 
 (defrule itinerario-preferito-per-località
   (itinerario (id ?id) (località $? ?località $?))
@@ -616,6 +621,12 @@ Esempio:
       (certainty ?cert))
   )
 )
+
+(defmodule REASONING-ITINERARIO
+  (import MAIN ?ALL)
+  (import DOMINIO deftemplate itinerario)
+)
+
 
 (defrule itinerario-preferito
   (attribute
@@ -681,7 +692,7 @@ Esempio:
         (eq ?albergo:id ?id-albergo)
         (bind ?stelle-str "")
         (loop-for-count ?albergo:stelle do
-          (bind ?stelle-str (str-cat ?stelle-str "*")))
+          (bind ?stelle-str (str-cat ?stelle-str "* ")))
         (format t "%-20s%-20s%-10s%-8g%-10g%-10g%n"
           ?albergo:località
           ?albergo:id
@@ -748,20 +759,20 @@ Esempio:
   )
 )
 
-(defrule stampa-attributi
+(defrule stampa-attribute
   (declare (salience ?*high-salience*))
   (test (eq ?*DEBUG* TRUE))
   =>
   (foreach ?name ?*DEBUG-ATTRIBUTE-NAMES*
+    (printout t ?name crlf crlf)
+    (format t "%-50s%10s%n" "value" "certainty")
     (printout t
-      "------------------------------" crlf
-      ?name crlf
-      "------------------------------" crlf
+      "-------------------------------------------------- ----------" crlf
     )
     (bind ?attrs (find-all-facts ((?att attribute)) (eq ?att:name ?name)))
-    (bind ?attrs (sort compare-attributes-by-value ?attrs))
+    (bind ?attrs (sort compare-attributes-by-certainty ?attrs))
     (foreach ?att ?attrs
-      (format t "%-30s%10.5f%n"
+      (format t "%-50s%10.2f%n"
         (fact-slot-value ?att value)
         (fact-slot-value ?att certainty))
     )
