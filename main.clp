@@ -59,10 +59,12 @@
   (focus
     DOMINIO
     ITINERARI
-    DOMINIO-ALBERGHI-PER-ITINERARIO
+    ALBERGHI-PER-ITINERARIO
     REGOLE-ALBERGHI
-    REGOLE
-    REASONING
+    REASONING-ALBERGHI
+    REGOLE-LOCALITÀ
+    REASONING-LOCALITÀ
+    REGOLE-ITINERARIO
     REASONING-ITINERARIO
     PRINT-RESULTS
   )
@@ -184,7 +186,6 @@ Esempio:
 (defmodule DOMINIO (export ?ALL) (import MAIN ?ALL))
 
 (defrule carica-dominio
-  (declare (salience ?*max-salience*))
   =>
   (load-facts dominio.txt)
 )
@@ -272,7 +273,7 @@ Esempio:
   )
 )
 
-(defmodule DOMINIO-ALBERGHI-PER-ITINERARIO (export ?ALL) (import MAIN ?ALL) (import DOMINIO ?ALL))
+(defmodule ALBERGHI-PER-ITINERARIO (export ?ALL) (import MAIN ?ALL) (import DOMINIO ?ALL))
 
 (deftemplate alberghi-per-itinerario
   (slot id)
@@ -403,8 +404,7 @@ Esempio:
 
 (defmodule REGOLE-ALBERGHI
   (import DOMINIO deftemplate itinerario)
-  (import DOMINIO-ALBERGHI-PER-ITINERARIO ?ALL))
-
+  (import ALBERGHI-PER-ITINERARIO ?ALL))
 
 (defrule alberghi-preferiti-per-occupazione
   (alberghi-per-itinerario (id ?id) (alberghi $?lista-alberghi))
@@ -473,8 +473,11 @@ Esempio:
       (value ?id)
       (certainty (min ?certainty-budget ?certainty-occupazione)))))
 
+(defmodule REASONING-ALBERGHI
+  (import MAIN ?ALL)
+  (import ALBERGHI-PER-ITINERARIO ?ALL))
+
 (defrule scegli-lista-alberghi-per-cf-maggiore
-  (declare (salience ?*low-salience*))
   ?itinerario <- (itinerario (id ?id-itinerario) (costo nil))
   =>
   (bind ?max-certainty -2)
@@ -516,7 +519,7 @@ Esempio:
   )
 )
 
-(defmodule REGOLE (export ?ALL) (import MAIN ?ALL) (import DOMINIO ?ALL))
+(defmodule REGOLE-LOCALITÀ (export ?ALL) (import MAIN ?ALL) (import DOMINIO ?ALL))
 
 (deffunction punteggio-distanza-da-area
   "
@@ -580,7 +583,9 @@ Esempio:
         (certainty (da-punteggio-turismo-località-a-cf ?punteggio)))))
 
 
-(defmodule REASONING (export ?ALL) (import MAIN ?ALL) (import DOMINIO ?ALL) (import REGOLE ?ALL))
+(defmodule REASONING-LOCALITÀ
+  (import MAIN ?ALL)
+  (import DOMINIO ?ALL))
 
 (defrule località-preferita-no-info
   (località (nome ?nome-località))
@@ -609,6 +614,9 @@ Esempio:
       (value ?località)
       (certainty ?cert))))
 
+(defmodule REGOLE-ITINERARIO
+  (import MAIN ?ALL)
+  (import DOMINIO deftemplate itinerario))
 
 (defrule itinerario-preferito-per-località
   (itinerario (id ?id) (località $? ?località $?))
@@ -630,7 +638,6 @@ Esempio:
   (import MAIN ?ALL)
   (import DOMINIO deftemplate itinerario)
 )
-
 
 (defrule itinerario-preferito
   (attribute
