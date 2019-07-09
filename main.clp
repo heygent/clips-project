@@ -10,6 +10,9 @@
      località-preferita
      itinerario-preferito-per-località
      itinerario-preferito-per-alberghi
+     alberghi-preferiti
+     alberghi-preferiti-per-budget
+     alberghi-preferiti-per-occupazione
      itinerario-preferito
    )
   ; Se la distanza di due località A e B è inferiore a questo numero, allora A
@@ -23,7 +26,14 @@
   ; Se il costo di un'itinerario supera di questo numero il budget dell'utente,
   ; il CF relativo all'itinerario in base al budget sarà 0. Se lo supera del
   ; doppio, il CF sarà -1 (anche i valori intermedi sono rappresentati nel CF).
-  ?*SOGLIA-MAX-SUPERAMENTO-PREZZO* = 50
+  ?*SOGLIA-MAX-SUPERAMENTO-PREZZO* = 100
+)
+
+(defglobal
+  ?*max-salience* = 10000
+  ?*high-salience* = 1000
+  ?*low-salience* = -1000
+  ?*min-salience* = -10000
 )
 
 (deftemplate query
@@ -42,7 +52,7 @@
   (slot certainty))
 
 (defrule start
-  (declare (salience 10000))
+  (declare (salience ?*max-salience*))
   (query)
   =>
   (set-fact-duplication TRUE)
@@ -90,12 +100,17 @@ Esempio:
     (return (- (+ ?cert1 ?cert2) (* ?cert1 ?cert2))))
   (if (and (<= ?cert1 0) (<= ?cert2 0)) then
     (return (+ (+ ?cert1 ?cert2) (* ?cert1 ?cert2))))
+  ; Se un CF è -1 e l'altro è 1, la formula per la combinazione dei CF tenta
+  ; una divisione per zero. Lo gestiamo come un caso particolare.
+  (if (and (= (abs ?cert1) 1) (= (abs ?cert2) 1)) then
+    (return 0)
+  )
   (/ (+ ?cert1 ?cert2) (- 1 (min (abs ?cert1) (abs ?cert2)))))
 
 (defrule combine-certainties
   "Se esiste una coppia di attribute con lo stesso name e value, combina le
   loro certezze."
-  (declare (salience 100)
+  (declare (salience ?*high-salience*)
            (auto-focus TRUE))
   ?rem1 <- (attribute (name ?rel) (value ?val) (certainty ?cert1))
   ?rem2 <- (attribute (name ?rel) (value ?val) (certainty ?cert2))
@@ -145,7 +160,7 @@ Esempio:
   "Restituisce la distanza tra due coppie di coordinate."
   (sqrt (+ (** (- ?x1 ?x2) 2) (** (- ?y1 ?y2) 2))))
 
-(deffunction sort-cmp-string
+(deffunction compare-strings
   "Restituisce TRUE se ?a viene lessicograficamente prima di ?b. Scritta per
   essere usata con la funzione sort di clips."
   (?a ?b)
@@ -159,9 +174,9 @@ Esempio:
 (defmodule DOMINIO (export ?ALL) (import MAIN ?ALL))
 
 (defrule carica-dominio
-  (declare (salience 10000))
+  (declare (salience ?*max-salience*))
   =>
-  (load-facts dominio.clp)
+  (load-facts dominio.txt)
 )
 
 (deftemplate località
@@ -200,7 +215,7 @@ Esempio:
     then
     (assert
       (itinerario
-        (id (implode$ (sort sort-cmp-string ?lista-località-itinerario)))
+        (id (implode$ (sort compare-strings ?lista-località-itinerario)))
         (località ?lista-località-itinerario)
       )
     )
@@ -446,7 +461,7 @@ Esempio:
       (certainty (min ?certainty-budget ?certainty-occupazione)))))
 
 (defrule scegli-lista-alberghi-per-cf-maggiore
-  (declare (salience -10))
+  (declare (salience ?*low-salience*))
   ?itinerario <- (itinerario (id ?id-itinerario) (costo nil))
   =>
   (bind ?max-certainty -2)
@@ -532,15 +547,17 @@ Esempio:
 
 (deffunction da-punteggio-turismo-località-a-cf
   (?punteggio)
-  "Dato un punteggio da 1 a 5 per il turismo di una località, restituisce un
+  "Dato un punteggio da 0 a 5 per il turismo di una località, restituisce un
   valore di certezza corrispondente a quel turismo. Si considera un punteggio
-  3 come neutro (che quindi restituirà come CF 0), un punteggio al di sopra di 3
-  positivo e un punteggio al di sotto negativo."
-  (- (/ (* ?punteggio 2) 5) 1))
+  0 come neutro (che quindi restituirà come CF 0), e un punteggio al di sopra
+  come positivo"
+  (* ?punteggio (/ 1 5))
+)
 
 (defrule località-preferita-per-turismo
-  (query (turismo $? ?tipo-turismo $?))
+  (query (turismo $? ?tipo $?))
   (località
+    (nome ?nome)
     (turismo $? ?tipo&:(symbolp ?tipo) ?punteggio&:(numberp ?punteggio) $?))
   =>
     (assert
@@ -619,11 +636,12 @@ Esempio:
 
 (defmodule PRINT-RESULTS (import MAIN ?ALL) (import DOMINIO ?ALL))
 
-(deffunction compara-attribute
+(deffunction compare-attributes-by-certainty
   (?it1 ?it2)
   (<
     (fact-slot-value ?it1 certainty)
-    (fact-slot-value ?it2 certainty))
+    (fact-slot-value ?it2 certainty)
+  )
 )
 
 (deffunction stampa-itinerario
@@ -691,7 +709,7 @@ Esempio:
 
   ; Ordina gli attribute in ordine decrescente di CF
   (bind ?attribute-itinerari
-    (sort compara-attribute ?attribute-itinerari)
+    (sort compare-attributes-by-certainty ?attribute-itinerari)
   )
 
   (printout t crlf "La tua richiesta:" crlf crlf)
@@ -722,18 +740,37 @@ Esempio:
   )
 )
 
+(deffunction compare-attributes-by-value
+  (?attr1 ?attr2)
+  (compare-strings
+    (fact-slot-value ?attr1 value)
+    (fact-slot-value ?attr2 value)
+  )
+)
+
 (defrule stampa-attributi
-  (attribute
-    (name ?name)
-    (value ?value)
-    (certainty ?certainty))
-  (test (member$ ?name ?*DEBUG-ATTRIBUTE-NAMES*))
+  (declare (salience ?*high-salience*))
   (test (eq ?*DEBUG* TRUE))
   =>
-  (format t " %-40s %-30s %2f%n" ?name ?value ?certainty))
+  (foreach ?name ?*DEBUG-ATTRIBUTE-NAMES*
+    (printout t
+      "------------------------------" crlf
+      ?name crlf
+      "------------------------------" crlf
+    )
+    (bind ?attrs (find-all-facts ((?att attribute)) (eq ?att:name ?name)))
+    (bind ?attrs (sort compare-attributes-by-value ?attrs))
+    (foreach ?att ?attrs
+      (format t "%-30s%10.5f%n"
+        (fact-slot-value ?att value)
+        (fact-slot-value ?att certainty))
+    )
+    (printout t crlf)
+  )
+)
 
 (defrule restart
-  (declare (salience -10))
+  (declare (salience ?*min-salience*))
   =>
   (reset)
   (focus MAIN))

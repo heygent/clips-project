@@ -6,13 +6,14 @@ clips << EOF | tee output.txt
 $DEBUG_STR
 (reset)
 (run)
-(assert 
- (query 
-   (giorni 3) 
+(assert
+ (query
+   (giorni 3)
+   (numero-città 2)
    (numero-persone 3) 
-   (budget 500) 
-   (regioni-da-escludere Piemonte) 
-   (turismo balneare)))
+   (budget 500)
+   (regioni-da-escludere Piemonte)
+   (turismo montano enogastronomico)))
 (run)
 (exit)
 EOF

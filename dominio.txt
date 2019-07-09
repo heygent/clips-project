@@ -1,71 +1,182 @@
-(località-tipo-turismo (nome-località Torino) (tipo balneare) (punteggio 3))
-(località-tipo-turismo (nome-località Milano) (tipo balneare) (punteggio 2))
-(località-tipo-turismo (nome-località LontanoPiemontese) (tipo balneare) (punteggio 4))
-(località-tipo-turismo (nome-località Macerata) (tipo balneare) (punteggio 1))
-(località-tipo-turismo (nome-località Camerino) (tipo balneare) (punteggio 2))
-(località-tipo-turismo (nome-località Acquasparta) (tipo balneare) (punteggio 4))
-(località-tipo-turismo (nome-località ColonettaDiProdo) (tipo balneare) (punteggio 5))
-(località-tipo-turismo (nome-località Foggia) (tipo balneare) (punteggio 3))
-(località-tipo-turismo (nome-località OrtaNova) (tipo balneare) (punteggio 2))
-(località-tipo-turismo (nome-località DuaneraLaRocca) (tipo balneare) (punteggio 5))
-(località-tipo-turismo (nome-località Zapponeta) (tipo balneare) (punteggio 4))
+; --- PIEMONTE ---
 
-;LATITUDINE        LONGITUDINE
-;EST 50 100       SUD 0 -100
-;CENTRO 0 50      CENTRO 0 100
-;OVEST -50 0      NORD 100 200
-(località (nome Torino) (lat -30) (lon 150))
-(località (nome Milano) (lat 20) (lon 150))
-(località (nome LontanoPiemontese) (lat -50) (lon 188))
-(località (nome Macerata) (lat 80 ) (lon 80))
-(località (nome Camerino) (lat 80) (lon 70))
-(località (nome acquasparta) (lat 70 ) (lon 60))
-(località (nome ColonettaDiProdo)(lat 75) (lon 50))
-(località (nome Foggia) (lat 80) (lon -50))
-(località (nome OrtaNova) (lat 70) (lon -80))
-(località (nome DuaneraLaRocca) (lat 20) (lon -10))
-(località (nome Zapponeta) (lat 10) (lon -100))
+(regione
+  (nome Piemonte)
+  (lat -300)
+  (lon 300)
+  (raggio 30)
+)
 
+(località
+  (nome Torino)
+  (lat -300)
+  (lon 290)
+  (turismo
+    montano 4
+    naturalistico 3
+    culturale 5
+    religioso 5
+  )
+)
 (albergo (id Torino1) (località Torino) (stelle 4) (camere-libere 5) (occupazione 0.3))
 (albergo (id Torino2) (località Torino) (stelle 2) (camere-libere 5) (occupazione 0.7))
-(albergo (id Milano1) (località Milano) (stelle 4) (camere-libere 5) (occupazione 0.7))
-(albergo (id Milano2) (località Milano) (stelle 2) (camere-libere 5) (occupazione 0.5))
+
+(località
+  (nome LontanoPiemontese)
+  (lat -300)
+  (lon 285)
+  (turismo
+    montano 5
+    termale 4
+    sportivo 2
+    enogastronomico 5
+  )
+)
 (albergo (id LontanoPiemontese1) (località LontanoPiemontese) (stelle 4) (camere-libere 5) (occupazione 0.5))
 (albergo (id LontanoPiemontese2) (località LontanoPiemontese) (stelle 2) (camere-libere 5) (occupazione 0.7))
-(albergo (id Macerata1) (località Macerata) (stelle 4) (camere-libere 3) (occupazione 0.7))
-(albergo (id Macerata2) (località Macerata) (stelle 2) (camere-libere 1) (occupazione 0.3))
-(albergo (id Camerino1) (località Camerino) (stelle 4) (camere-libere 1) (occupazione 0.5))
-(albergo (id Camerino2) (località Camerino) (stelle 2) (camere-libere 1) (occupazione 0.7))
-(albergo (id acquasparta1) (località acquasparta) (stelle 4) (camere-libere 1) (occupazione 0.7))
-(albergo (id acquasparta2) (località acquasparta) (stelle 2) (camere-libere 1) (occupazione 0.3))
-(albergo (id ColonettaDiProdo1) (località ColonettaDiProdo)(stelle 4) (camere-libere 1) (occupazione 0.7))
-(albergo (id ColonettaDiProdo2) (località ColonettaDiProdo)(stelle 2) (camere-libere 3) (occupazione 0.7))
-(albergo (id Foggia1) (località Foggia) (stelle 4) (camere-libere 1) (occupazione 0.5))
-(albergo (id Foggia2) (località Foggia) (stelle 2) (camere-libere 2) (occupazione 0.7))
-(albergo (id OrtaNova1) (località OrtaNova) (stelle 4) (camere-libere 2) (occupazione 0.3))
-(albergo (id OrtaNova2) (località OrtaNova) (stelle 2) (camere-libere 1) (occupazione 0.7))
-(albergo (id DuaneraLaRocca1) (località DuaneraLaRocca) (stelle 4) (camere-libere 1) (occupazione 0.5))
-(albergo (id DuaneraLaRocca2) (località DuaneraLaRocca) (stelle 2) (camere-libere 1) (occupazione 0.7))
-(albergo (id Zapponeta1) (località Zapponeta) (stelle 4) (camere-libere 1) (occupazione 0.5))
-(albergo (id Zapponeta2) (località Zapponeta) (stelle 2) (camere-libere 1) (occupazione 0.3))
+
+; --- LOMBARDIA ---
 
 (regione
-    (nome Piemonte)
-    (lat -30)
-    (lon 140)
-    (raggio 30))
+  (nome Lombardia)
+  (lat 300)
+  (lon 300)
+  (raggio 30)
+)
+
+(località
+  (nome Milano)
+  (lat 310)
+  (lon 300)
+  (turismo
+    culturale 5
+    enogastronomico 4
+    sportivo 5
+  )
+)
+
+(albergo (id Milano1) (località Milano) (stelle 4) (camere-libere 5) (occupazione 0.7))
+(albergo (id Milano2) (località Milano) (stelle 2) (camere-libere 5) (occupazione 0.5))
+
+
+(località
+  (nome Pavia)
+  (lat 300)
+  (lon 310)
+  (turismo
+    culturale 5
+    enogastronomico 4
+    sportivo 5
+  )
+)
+
+(albergo (id Pavia1) (località Pavia) (stelle 4) (camere-libere 5) (occupazione 0.7))
+(albergo (id Pavia2) (località Pavia) (stelle 2) (camere-libere 5) (occupazione 0.5))
+
+; --- MARCHE ---
+
 (regione
-    (nome Lombardia)
-    (lat 30)
-    (lon 150)
-    (raggio 30))
+  (nome Marche)
+  (lat -300)
+  (lon -300)
+  (raggio 30)
+)
+
+(località
+  (nome Macerata)
+  (lat -310)
+  (lon -300)
+  (turismo
+    sportivo 2
+    culturale 4
+    religioso 4
+    balneare 3
+    lacustre 4
+    montano 3
+  )
+)
+(albergo (id Macerata1) (località Macerata) (stelle 4) (camere-libere 3) (occupazione 0.7))
+(albergo (id Macerata2) (località Macerata) (stelle 2) (camere-libere 1) (occupazione 0.3))
+
+(località
+  (nome Camerino)
+  (lat -305)
+  (lon -300)
+  (turismo
+    montano 5
+    naturalistico 5
+    lacustre 3
+  )
+)
+(albergo (id Camerino1) (località Camerino) (stelle 4) (camere-libere 1) (occupazione 0.5))
+(albergo (id Camerino2) (località Camerino) (stelle 2) (camere-libere 1) (occupazione 0.7))
+
+(località
+  (nome Acquasparta)
+  (lat -310)
+  (lon -301)
+  (turismo
+    balneare 4
+    montano 1
+  )
+)
+(albergo (id Acquasparta1) (località Acquasparta) (stelle 4) (camere-libere 1) (occupazione 0.7))
+(albergo (id Acquasparta2) (località Acquasparta) (stelle 2) (camere-libere 1) (occupazione 0.3))
+
+(località
+  (nome ColonettaDiProdo)
+  (lat -300)
+  (lon -295)
+  (turismo balneare 4)
+)
+(albergo (id ColonettaDiProdo1) (località ColonettaDiProdo)(stelle 4) (camere-libere 1) (occupazione 0.7))
+(albergo (id ColonettaDiProdo2) (località ColonettaDiProdo)(stelle 2) (camere-libere 3) (occupazione 0.7))
+
+; --- PUGLIA ---
+
 (regione
-    (nome Marche)
-    (lat 90)
-    (lon 90)
-    (raggio 30))
-(regione
-    (nome Puglia)
-    (lat 70)
-    (lon -30)
-    (raggio 30))
+  (nome Puglia)
+  (lat 300)
+  (lon -300)
+  (raggio 30)
+)
+
+(località
+  (nome Foggia)
+  (lat 300)
+  (lon -301)
+  (turismo balneare 4)
+)
+
+(albergo (id Foggia1) (località Foggia) (stelle 4) (camere-libere 1) (occupazione 0.5))
+(albergo (id Foggia2) (località Foggia) (stelle 2) (camere-libere 2) (occupazione 0.7))
+
+(località
+  (nome OrtaNova)
+  (lat 300)
+  (lon -332)
+  (turismo balneare 4)
+)
+
+(albergo (id OrtaNova1) (località OrtaNova) (stelle 4) (camere-libere 2) (occupazione 0.3))
+(albergo (id OrtaNova2) (località OrtaNova) (stelle 2) (camere-libere 1) (occupazione 0.7))
+
+(località
+  (nome DuaneraLaRocca)
+  (lat 300)
+  (lon -305)
+  (turismo balneare 4)
+)
+
+(albergo (id DuaneraLaRocca1) (località DuaneraLaRocca) (stelle 4) (camere-libere 1) (occupazione 0.5))
+(albergo (id DuaneraLaRocca2) (località DuaneraLaRocca) (stelle 2) (camere-libere 1) (occupazione 0.7))
+
+(località
+  (nome Zapponeta)
+  (lat 300)
+  (lon -310)
+  (turismo balneare 4)
+)
+
+(albergo (id Zapponeta1) (località Zapponeta) (stelle 4) (camere-libere 1) (occupazione 0.5))
+(albergo (id Zapponeta2) (località Zapponeta) (stelle 2) (camere-libere 1) (occupazione 0.3))
