@@ -168,6 +168,7 @@ Esempio:
   (slot nome)
   (slot lat)
   (slot lon)
+  (multislot turismo)
 )
 
 (deftemplate regione
@@ -175,12 +176,6 @@ Esempio:
   (slot lat)
   (slot lon)
   (slot raggio)
-)
-
-(deftemplate località-tipo-turismo
-  (slot nome-località)
-  (slot tipo)
-  (slot punteggio)
 )
 
 (deftemplate albergo
@@ -545,10 +540,8 @@ Esempio:
 
 (defrule località-preferita-per-turismo
   (query (turismo $? ?tipo-turismo $?))
-  (località-tipo-turismo
-    (nome-località ?nome)
-    (tipo ?tipo-turismo)
-    (punteggio ?punteggio))
+  (località
+    (turismo $? ?tipo&:(symbolp ?tipo) ?punteggio&:(numberp ?punteggio) $?))
   =>
     (assert
       (attribute

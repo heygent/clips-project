@@ -9,7 +9,7 @@ $DEBUG_STR
 (assert 
  (query 
    (giorni 3) 
-   (numero-persone 4) 
+   (numero-persone 3) 
    (budget 500) 
    (regioni-da-escludere Piemonte) 
    (turismo balneare)))
