@@ -96,9 +96,9 @@ due itinerari a prescindere dal fatto che i loro CF siano positivi o negativi.
 
 value                          certainty
 ----------------------------- ----------
-Milano Pavia                        0.50
-ColonettaDiProdo Macerata          -0.50
-DuaneraLaRocca OrtaNova            -1.00
-LontanoPiemontese Torino           -1.00
+Milano Pavia                     0.50
+ColonettaDiProdo Macerata       -0.50
+DuaneraLaRocca OrtaNova         -1.00
+LontanoPiemontese Torino        -1.00
 
 

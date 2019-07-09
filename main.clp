@@ -26,7 +26,7 @@
   ; Se il costo di un'itinerario supera di questo numero il budget dell'utente,
   ; il CF relativo all'itinerario in base al budget sarà 0. Se lo supera del
   ; doppio, il CF sarà -1 (anche i valori intermedi sono rappresentati nel CF).
-  ?*SOGLIA-MAX-SUPERAMENTO-PREZZO* = 100
+  ?*SOGLIA-MAX-SUPERAMENTO-PREZZO* = 50
 )
 
 (defglobal
@@ -467,7 +467,7 @@ Esempio:
     (attribute
       (name alberghi-preferiti)
       (value ?id)
-      (certainty (min ?certainty-budget ?certainty-occupazione)))))
+      (certainty (+ (* 0.7 ?certainty-budget) (* 0.3 ?certainty-occupazione))))))
 
 (defrule scegli-lista-alberghi-per-cf-maggiore
   (declare (salience ?*low-salience*))
@@ -642,7 +642,7 @@ Esempio:
     (attribute
       (name itinerario-preferito)
       (value ?id-itinerario)
-      (certainty (min ?cert-per-località ?cert-per-alberghi))))
+      (certainty (+ (* 0.5 ?cert-per-località) (* 0.5 ?cert-per-alberghi)))))
 )
 
 (defmodule PRINT-RESULTS (import MAIN ?ALL) (import DOMINIO ?ALL))

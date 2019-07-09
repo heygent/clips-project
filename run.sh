@@ -7,12 +7,13 @@ $DEBUG_STR
 (reset)
 (run)
 (assert
- (query
-   (giorni 3)
-   (numero-città 3)
-   (numero-persone 4) 
-   (budget 700)
- )
+  (query
+     (giorni 3)
+     (numero-persone 3)
+     (numero-città 2)
+     (turismo montano enogastronomico)
+     (budget 500)
+   )
 )
 (run)
 (exit)
