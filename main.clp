@@ -58,6 +58,7 @@
   (set-fact-duplication TRUE)
   (focus
     DOMINIO
+    ITINERARI
     DOMINIO-ALBERGHI-PER-ITINERARIO
     REGOLE-ALBERGHI
     REGOLE
@@ -217,6 +218,9 @@ Esempio:
   (multislot pernottamenti)
   (slot costo)
 )
+
+(defmodule ITINERARI
+  (import DOMINIO ?ALL))
 
 (deffunction asserisci-itinerari
   (?lista-località-itinerario ?lunghezza-itinerario)
@@ -467,7 +471,7 @@ Esempio:
     (attribute
       (name alberghi-preferiti)
       (value ?id)
-      (certainty (+ (* 0.7 ?certainty-budget) (* 0.3 ?certainty-occupazione))))))
+      (certainty (min ?certainty-budget ?certainty-occupazione)))))
 
 (defrule scegli-lista-alberghi-per-cf-maggiore
   (declare (salience ?*low-salience*))
@@ -661,29 +665,7 @@ Esempio:
     (eq ?itinerario:id ?id-itinerario)
     (bind ?camere (camere-per-persone ?query:numero-persone))
 
-    (printout t
-      crlf
-      ": Itinerario " ?indice-itinerario
-      ", costo totale: " ?itinerario:costo crlf)
-
-    (printout t crlf)
-    (format t "%-21s%-20s%-10s%-8s%-10s%-10s%n"
-      "Località"
-      "Albergo"
-      "Stelle"
-      "Notti"
-      "Camere"
-      "Costo"
-    )
-    (format t "%-20s%-20s%-10s%-8s%-10s%-10s%n"
-      "------------------"
-      "-------------------"
-      "---------"
-      "-------"
-      "---------"
-      "---------"
-    )
-
+    (printout t "**Itinerario " ?indice-itinerario "**" crlf)
     (foreach ?id-albergo ?itinerario:alberghi
       (bind ?pernottamenti
         (nth$ ?id-albergo-index ?itinerario:pernottamenti))
@@ -693,7 +675,7 @@ Esempio:
         (bind ?stelle-str "")
         (loop-for-count ?albergo:stelle do
           (bind ?stelle-str (str-cat ?stelle-str "* ")))
-        (format t "%-20s%-20s%-10s%-8g%-10g%-10g%n"
+        (format t "%-20s%-20s%-10s%8g%10g%10g%n"
           ?albergo:località
           ?albergo:id
           ?stelle-str
@@ -703,9 +685,7 @@ Esempio:
         )
       )
     )
-
-
-    (printout t crlf)
+    (format t "%-68s%10g%n" "Totale" ?itinerario:costo)
   )
 )
 
@@ -730,11 +710,27 @@ Esempio:
   (if (> (length$ ?attribute-itinerari) 0)
     then
     (printout t "Abbiamo alcuni itinerari da suggerirti." crlf)
+
+    (printout t crlf)
+    (format t "%-21s%-20s%-10s%8s%10s%10s%n"
+      "Località"
+      "Albergo"
+      "Stelle"
+      "Notti"
+      "Camere"
+      "Costo"
+    )
+    (format t "%-20s%-20s%-10s%8s%10s%10s%n"
+      "------------------"
+      "-------------------"
+      "---------"
+      "-------"
+      "---------"
+      "---------"
+    )
     else
     (printout t "Spiacente, il sistema non ha trovato risultati." crlf)
   )
-
-  (printout t crlf)
 
   ; Stampa sempre i primi due risultati.
   ; Stampa i tre risultati successivi finché hanno certainty >= 0.
@@ -767,7 +763,7 @@ Esempio:
     (printout t ?name crlf crlf)
     (format t "%-50s%10s%n" "value" "certainty")
     (printout t
-      "-------------------------------------------------- ----------" crlf
+      "------------------------------------------------- ----------" crlf
     )
     (bind ?attrs (find-all-facts ((?att attribute)) (eq ?att:name ?name)))
     (bind ?attrs (sort compare-attributes-by-certainty ?attrs))

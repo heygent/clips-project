@@ -8,9 +8,13 @@ Il dominio con cui abbiamo testato ...
 
 ## Prove su esclusione regione e tipo di turismo
 
-La query inviata al sistema è la seguente:
+Il dominio su cui abbiamo eseguito questa query è in `dominio1.txt`.
 
-```{.lisp caption="Query eseguita per la prima prova"}
+Nel corso di questa prova abbiamo dato in input al sistema due query, in cui
+l'unica differenza tra le due è che la seconda contiene il Piemonte tra le
+regioni escluse.
+
+```lisp
 (query
    (giorni 3)
    (numero-persone 3)
@@ -19,48 +23,48 @@ La query inviata al sistema è la seguente:
    (budget 500))
 ```
 
-In questa situazione abbiamo come itinerari preferiti (Milano, Pavia) e
-(Torino, LontanoPiemontese), dato che entrambi gli itinerari contengono città
-con buoni punteggi per i tipi di turismo montano ed enogastronomico. Dato il
-budget basso, il sistema consiglia gli alberghi meno costosi.
 
+Località            Albergo             Stelle       Notti    Camere     Costo
+------------------  ------------------- ---------  ------- --------- ---------
+**Itinerario 1**
+Milano              Milano2             * *              2         2       300
+Pavia               Pavia2              * *              1         2       150
+Totale                                                                     450
+**Itinerario 2**
+Torino              Torino2             * *              2         2       300
+LontanoPiemontese   LontanoPiemontese2  * *              1         2       150
+Totale                                                                     450
+**Itinerario 3**
+Foggia              Foggia2             * *              1         2       150
+Zapponeta           Zapponeta2          *                2         2       200
+Totale                                                                     350
+**Itinerario 4**
+DuaneraLaRocca      DuaneraLaRocca1     * * * *          1         2       250
+Zapponeta           Zapponeta2          *                2         2       200
+Totale                                                                     450
 
-: Query 1, itinerario 1, costo totale: 450
+: Risultati mostrati dal sistema per la prima query
 
-Località            Albergo             Stelle    Notti   Camere    Costo
-------------------  ------------------- --------- ------- --------- ---------
-Milano              Milano2             * *       2       2         300
-Pavia               Pavia2              * *       1       2         150
+value                               certainty
+--------------------------------- -----------
+Milano Pavia                             0.75
+LontanoPiemontese Torino                 0.65
+Foggia Zapponeta                         0.35
+DuaneraLaRocca Zapponeta                 0.35
+ColonettaDiProdo Macerata               -0.08
+Foggia OrtaNova                         -0.50
+DuaneraLaRocca Foggia                   -0.50
+DuaneraLaRocca OrtaNova                 -0.50
+OrtaNova Zapponeta                      -0.50
 
+: CF assegnati agli itinerari nel corso della prima interrogazione.
 
-: Query 1, itinerario 2, costo totale: 450
+Il sistema mostra quattro itinerari, quelli che alla fine dell'elaborazione
+hanno CF positivo. Andando ad aggiungere il Piemonte alle regioni escluse,
+vengono mostrati gli stessi itinerari mostrati in precedenza, ad eccezione di
+(Torino, LontanoPiemontese), che dopo la nuova query assume CF negativo.
 
-Località            Albergo             Stelle    Notti   Camere    Costo
-------------------  ------------------- --------- ------- --------- ---------
-Torino              Torino2             * *       2       2         300
-LontanoPiemontese   LontanoPiemontese2  * *       1       2         150
-
-
-: CF assegnati agli itinerari dopo la query
-
-value                          certainty
------------------------------ ----------
-Milano Pavia                        0.50
-LontanoPiemontese Torino            0.30
-ColonettaDiProdo Macerata          -0.50
-DuaneraLaRocca OrtaNova            -1.00
-
-L'itinerario (ColonnettaDiProdo, Macerata) è fuori budget di 150, e la soglia
-di superamento budget è impostata a 100, per cui il CF assegnato agli alberghi
-dato il budget è di -0.5 (ha anche un buon punteggio in base all'occupazione,
-0.3, ma dato che la combinazione dei punteggi degli alberghi avviene in base al
-minimo questo non viene considerato). 
-
-Andando a inserire il Piemonte nelle regioni escluse, la situazione cambia e il
-sistema consiglia come itinerari (Milano, Pavia) e (Macerata,
-ColonnettaDiProdo).
-
-```{.lisp caption="Query eseguita per la seconda prova. Viene aggiunto il Piemonte alle regioni escluse."}
+```lisp
 (query
    (giorni 3)
    (numero-persone 3)
@@ -70,35 +74,93 @@ ColonnettaDiProdo).
    (budget 500))
 ```
 
+Località            Albergo             Stelle       Notti    Camere     Costo
+------------------  ------------------- ---------  ------- --------- ---------
+**Itinerario 1**
+Milano              Milano2             * *              2         2       300
+Pavia               Pavia2              * *              1         2       150
+Totale                                                                     450
+**Itinerario 2**
+Foggia              Foggia2             * *              1         2       150
+Zapponeta           Zapponeta2          *                2         2       200
+Totale                                                                     350
+**Itinerario 3**
+DuaneraLaRocca      DuaneraLaRocca1     * * * *          1         2       250
+Zapponeta           Zapponeta2          *                2         2       200
+Totale                                                                     450
 
-: Query 2, itinerario 1, costo totale: 450
+: Risultati della seconda interrogazione
 
-Località            Albergo             Stelle    Notti   Camere    Costo
-------------------  ------------------- --------- ------- --------- ---------
-Milano              Milano2             * *       2       2         300
-Pavia               Pavia2              * *       1       2         150
+value                                              certainty
+------------------------------------------------- ----------
+Milano Pavia                                            0.75
+Foggia Zapponeta                                        0.35
+DuaneraLaRocca Zapponeta                                0.35
+ColonettaDiProdo Macerata                              -0.03
+LontanoPiemontese Torino                               -0.35
+Foggia OrtaNova                                        -0.50
+DuaneraLaRocca Foggia                                  -0.50
+DuaneraLaRocca OrtaNova                                -0.50
+OrtaNova Zapponeta                                     -0.50
 
-
-: Query 2, itinerario 2, costo totale: 650
-
-Località            Albergo             Stelle    Notti   Camere    Costo
-------------------  ------------------- --------- ------- --------- ---------
-Macerata            Macerata1           * * * *   2       2         500
-ColonettaDiProdo    ColonettaDiProdo2   * *       1       2         150
-
-
-(ColonnettaDiProdo, Macerata) ha lo stesso CF di prima (-0.5) a causa del
-budget, ma stavolta il sistema lo raccomanda, dato che raccomanda sempre almeno
-due itinerari a prescindere dal fatto che i loro CF siano positivi o negativi.
+: CF assegnati agli itinerari nel corso della seconda interrogazione
 
 
-: CF assegnati agli itinerari dopo la query
+## Prova con budget alto e alta disponibilità di camere
 
-value                          certainty
------------------------------ ----------
-Milano Pavia                     0.50
-ColonettaDiProdo Macerata       -0.50
-DuaneraLaRocca OrtaNova         -1.00
-LontanoPiemontese Torino        -1.00
+```lisp
+  (query
+     (giorni 5)
+     (numero-persone 5)
+     (numero-città 3)
+     (turismo sportivo)
+     (budget 2000)
+   )
+```
 
+Il dominio su cui abbiamo effettuato questa prova è in `dominio2.txt`. Rispetto
+al dominio precedente, è stata aggiunta la località di Bergamo, e si è
+aumentato il numero di camere disponibili in diversi alberghi. Il sistema ora
+valuta sei itinerari diversi con CF positivo, di cui mostra i primi cinque in
+ordine decrescente di certezza.
 
+Località            Albergo             Stelle       Notti    Camere     Costo
+------------------  ------------------- ---------  ------- --------- ---------
+**Itinerario 1**
+Milano              Milano2             * *              3         3       675
+Pavia               Pavia2              * *              1         3       225
+Bergamo             Bergamo2            * *              1         3       225
+Totale                                                                    1125
+**Itinerario 2**
+Macerata            Macerata1           * * * *          1         3       375
+Camerino            Camerino1           * * * *          3         3      1125
+Acquasparta         Acquasparta1        * * * *          1         3       375
+Totale                                                                    1875
+**Itinerario 3**
+Macerata            Macerata1           * * * *          1         3       375
+Camerino            Camerino1           * * * *          3         3      1125
+ColonettaDiProdo    ColonettaDiProdo2   * *              1         3       225
+Totale                                                                    1725
+**Itinerario 4**
+Macerata            Macerata1           * * * *          3         3      1125
+Acquasparta         Acquasparta1        * * * *          1         3       375
+ColonettaDiProdo    ColonettaDiProdo2   * *              1         3       225
+Totale                                                                    1725
+**Itinerario 5**
+OrtaNova            OrtaNova1           * * * *          3         3      1125
+DuaneraLaRocca      DuaneraLaRocca2     * * *            1         3       300
+Zapponeta           Zapponeta2          *                1         3       150
+Totale                                                                    1575
+
+: Output della query su `dominio2.txt`
+
+value                                              certainty
+------------------------------------------------- ----------
+Bergamo Milano Pavia                                    0.75
+Acquasparta Camerino Macerata                           0.57
+Camerino ColonettaDiProdo Macerata                      0.57
+Acquasparta ColonettaDiProdo Macerata                   0.47
+DuaneraLaRocca OrtaNova Zapponeta                       0.35
+Acquasparta Camerino ColonettaDiProdo                   0.25
+
+: CF assegnati dal sistema nel corso dell'elaborazione della query.

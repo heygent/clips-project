@@ -18,7 +18,7 @@
     religioso 5
   )
 )
-(albergo (id Torino1) (località Torino) (stelle 4) (camere-libere 5) (occupazione 0.3))
+(albergo (id Torino1) (località Torino) (stelle 4) (camere-libere 6) (occupazione 0.3))
 (albergo (id Torino2) (località Torino) (stelle 2) (camere-libere 5) (occupazione 0.7))
 
 (località
@@ -73,6 +73,20 @@
 (albergo (id Pavia1) (località Pavia) (stelle 4) (camere-libere 5) (occupazione 0.7))
 (albergo (id Pavia2) (località Pavia) (stelle 2) (camere-libere 5) (occupazione 0.5))
 
+(località
+  (nome Bergamo)
+  (lat 300)
+  (lon 310)
+  (turismo
+    culturale 5
+    enogastronomico 1
+    sportivo 2
+  )
+)
+
+(albergo (id Bergamo1) (località Bergamo) (stelle 4) (camere-libere 5) (occupazione 0.7))
+(albergo (id Bergamo2) (località Bergamo) (stelle 2) (camere-libere 5) (occupazione 0.5))
+
 ; --- MARCHE ---
 
 (regione
@@ -96,7 +110,7 @@
   )
 )
 (albergo (id Macerata1) (località Macerata) (stelle 4) (camere-libere 3) (occupazione 0.7))
-(albergo (id Macerata2) (località Macerata) (stelle 2) (camere-libere 1) (occupazione 0.3))
+(albergo (id Macerata2) (località Macerata) (stelle 2) (camere-libere 2) (occupazione 0.3))
 
 (località
   (nome Camerino)
@@ -108,8 +122,8 @@
     lacustre 3
   )
 )
-(albergo (id Camerino1) (località Camerino) (stelle 4) (camere-libere 1) (occupazione 0.5))
-(albergo (id Camerino2) (località Camerino) (stelle 2) (camere-libere 1) (occupazione 0.7))
+(albergo (id Camerino1) (località Camerino) (stelle 4) (camere-libere 4) (occupazione 0.5))
+(albergo (id Camerino2) (località Camerino) (stelle 2) (camere-libere 4) (occupazione 0.7))
 
 (località
   (nome Acquasparta)
@@ -120,8 +134,8 @@
     montano 1
   )
 )
-(albergo (id Acquasparta1) (località Acquasparta) (stelle 4) (camere-libere 1) (occupazione 0.7))
-(albergo (id Acquasparta2) (località Acquasparta) (stelle 2) (camere-libere 1) (occupazione 0.3))
+(albergo (id Acquasparta1) (località Acquasparta) (stelle 4) (camere-libere 4) (occupazione 0.7))
+(albergo (id Acquasparta2) (località Acquasparta) (stelle 2) (camere-libere 2) (occupazione 0.3))
 
 (località
   (nome ColonettaDiProdo)
@@ -129,8 +143,8 @@
   (lon -295)
   (turismo balneare 4)
 )
-(albergo (id ColonettaDiProdo1) (località ColonettaDiProdo)(stelle 4) (camere-libere 1) (occupazione 0.7))
-(albergo (id ColonettaDiProdo2) (località ColonettaDiProdo)(stelle 2) (camere-libere 3) (occupazione 0.7))
+(albergo (id ColonettaDiProdo1) (località ColonettaDiProdo)(stelle 4) (camere-libere 2) (occupazione 0.7))
+(albergo (id ColonettaDiProdo2) (località ColonettaDiProdo)(stelle 2) (camere-libere 4) (occupazione 0.7))
 
 ; --- PUGLIA ---
 
@@ -148,7 +162,7 @@
   (turismo balneare 4 termale 5)
 )
 
-(albergo (id Foggia1) (località Foggia) (stelle 4) (camere-libere 2) (occupazione 0.5))
+(albergo (id Foggia1) (località Foggia) (stelle 3) (camere-libere 2) (occupazione 0.5))
 (albergo (id Foggia2) (località Foggia) (stelle 2) (camere-libere 2) (occupazione 0.7))
 
 (località
@@ -158,8 +172,8 @@
   (turismo balneare 3 termale 4)
 )
 
-(albergo (id OrtaNova1) (località OrtaNova) (stelle 4) (camere-libere 2) (occupazione 0.3))
-(albergo (id OrtaNova2) (località OrtaNova) (stelle 2) (camere-libere 1) (occupazione 0.7))
+(albergo (id OrtaNova1) (località OrtaNova) (stelle 4) (camere-libere 3) (occupazione 0.3))
+(albergo (id OrtaNova2) (località OrtaNova) (stelle 3) (camere-libere 2) (occupazione 0.7))
 
 (località
   (nome DuaneraLaRocca)
@@ -168,8 +182,8 @@
   (turismo balneare 4)
 )
 
-(albergo (id DuaneraLaRocca1) (località DuaneraLaRocca) (stelle 4) (camere-libere 2) (occupazione 0.5))
-(albergo (id DuaneraLaRocca2) (località DuaneraLaRocca) (stelle 2) (camere-libere 1) (occupazione 0.7))
+(albergo (id DuaneraLaRocca1) (località DuaneraLaRocca) (stelle 4) (camere-libere 3) (occupazione 0.5))
+(albergo (id DuaneraLaRocca2) (località DuaneraLaRocca) (stelle 3) (camere-libere 5) (occupazione 0.7))
 
 (località
   (nome Zapponeta)
@@ -178,5 +192,5 @@
   (turismo balneare 4 termale 2)
 )
 
-(albergo (id Zapponeta1) (località Zapponeta) (stelle 4) (camere-libere 3) (occupazione 0.5))
-(albergo (id Zapponeta2) (località Zapponeta) (stelle 1) (camere-libere 2) (occupazione 0.3))
+(albergo (id Zapponeta1) (località Zapponeta) (stelle 3) (camere-libere 4) (occupazione 0.5))
+(albergo (id Zapponeta2) (località Zapponeta) (stelle 1) (camere-libere 4) (occupazione 0.3))
