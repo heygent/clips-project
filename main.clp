@@ -36,6 +36,9 @@
   ?*min-salience* = -10000
 )
 
+(defglobal
+  ?*welcome-screen-shown* = FALSE)
+
 (deftemplate query
   (slot giorni (type INTEGER) (range 1 ?VARIABLE) (default 5))
   (slot numero-persone (type INTEGER) (range 1 ?VARIABLE) (default 2))
@@ -74,7 +77,9 @@
   (not (query))
   (test (eq ?*DEBUG* FALSE))
   =>
-  (printout t "
+  (set-reset-globals FALSE)
+  (if (not ?*welcome-screen-shown*) then
+    (printout t "
   /$$$$$$$                                 /$$$$$$                  /$$                               /$$    /$$          /$$
  | $$__  $$                               /$$__  $$                | $$                              | $$   | $$         |__/
  | $$  \\ $$  /$$$$$$  /$$    /$$ /$$$$$$ | $$  \\ $$ /$$$$$$$   /$$$$$$$  /$$$$$$   /$$$$$$   /$$$$$$ | $$   | $$ /$$$$$$  /$$
@@ -84,7 +89,10 @@
  | $$$$$$$/|  $$$$$$/   \\  $/  |  $$$$$$$| $$  | $$| $$  | $$|  $$$$$$$|  $$$$$$$| $$      |  $$$$$$$   \\  $/  |  $$$$$$$| $$
  |_______/  \\______/     \\_/    \\_______/|__/  |__/|__/  |__/ \\_______/ \\_______/|__/       \\_______/    \\_/    \\_______/|__/
 
-Benvenuto a DoveAndareVai©™, il sistema esperto per organizzare i tuoi viaggi.
+Benvenuto in DoveAndareVai©™, il sistema esperto per organizzare i tuoi viaggi.")
+    (bind ?*welcome-screen-shown* TRUE)
+  )
+  (printout t "
 Per procedere, asserisci una query ed esegui il comando (run).
 
 Esempio:
@@ -101,7 +109,8 @@ Esempio:
 
 (run)
 
-")
+"
+  )
 )
 
 (deffunction combined-certainty
@@ -672,7 +681,7 @@ Esempio:
     (eq ?itinerario:id ?id-itinerario)
     (bind ?camere (camere-per-persone ?query:numero-persone))
 
-    (printout t "**Itinerario " ?indice-itinerario "**" crlf)
+    (printout t "__Itinerario " ?indice-itinerario "__" crlf)
     (foreach ?id-albergo ?itinerario:alberghi
       (bind ?pernottamenti
         (nth$ ?id-albergo-index ?itinerario:pernottamenti))
