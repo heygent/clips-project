@@ -199,7 +199,7 @@ il numero di camere occupate e quello di camere totali dell'albergo .
 ```
 
 Le regioni sono caratterizzate da `lat` e `lon`, che hanno lo stesso
-significato attribuito in `località`, e un raggio. Di base, ogni regione è
+significato attribuito in `località`, e un raggio. Ogni regione è
 modellata come una circonferenza, e le località che hanno coordinate
 all'interno della circonferenza appartengono alla regione. 
 
@@ -380,8 +380,8 @@ in base a questo criterio:
 - prendi il resto della divisione fatta prima, e assegna i giorni restanti
   all'albergo con occupazione minore.
 
-Il costo di una data lista di alberghi viene invece calcolato in base al numero
-di giorni, di camere richieste e al costo di una camera all'interno
+Il costo di una data lista di alberghi viene invece calcolato a partire dal
+numero di giorni, di camere richieste e al costo di una camera all'interno
 dell'albergo. Il costo della camera è considerato in funzione del numero di
 stelle, in base al seguente calcolo:
 
@@ -407,8 +407,8 @@ Il budget è gestito dalla regola `alberghi-preferiti-per-budget`, che prende il
 costo totale della prenotazione degli alberghi nella lista e assegna un
 punteggio da 0 a 1 basato tra il rapporto tra il budget e il costo.
 
-Il punteggio per il budget è calcolato in base a una soglia massima costante,
-in base alla seguente logica.
+Il punteggio per il budget è calcolato tramite una soglia massima costante,
+seguendo questa logica:
 
 - Se il costo è contenuto nel budget, il CF assegnato sarà 1.
 - Se invece il costo supera il budget di un valore inferiore alla soglia, il CF
